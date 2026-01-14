@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaris Menu UI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+        
+        :root {
+            --menu-color: 168, 25, 56;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            color-scheme: normal !important;
+        }
+        
+        body {
+            background: none !important;
+            margin: 0;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            height: 100vh;
+            user-select: none;
+            overflow: hidden !important;
+        }
+        
+        #root {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .Desc {
+            position: absolute;
+            display: flex;
+            left: 50%;
+            bottom: 4vw;
+            transform: translate(-50%);
+            width: auto;
+            height: 1.3021vw;
+            background-color: #000c;
+            border-radius: .2604vw;
+            padding: 14px;
+            font-family: Inter;
+            font-weight: 180;
+            font-size: .651vw;
+            color: #fff;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .Desc.show {
+            opacity: 1;
+        }
+        
+        .PWrapper {
+            position: absolute;
+            display: flex;
+            left: 4vw;
+            top: 50%;
+            transform: translateY(-50%);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: Inter;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .PWrapper.show {
+            opacity: 1;
+        }
+        
+        .PElements {
+            position: relative;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            flex-direction: row;
+            gap: .2604vw;
+        }
+        
+        .PScroll {
+            position: absolute;
+            display: flex;
+            left: -.8vw;
+            width: .5208vw;
+            height: 100%;
+            background-color: #000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: .1042vw;
+            border-radius: .1042vw;
+        }
+        
+        .PScroll i {
+            font-size: .5208vw;
+            color: #fff;
+        }
+        
+        .PSProgressWrapper {
+            position: relative;
+            display: flex;
+            width: .2083vw;
+            height: 93%;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .PSProgress {
+            position: relative;
+            display: flex;
+            width: .2083vw;
+            margin-top: .1302vw;
+            background-color: rgb(var(--menu-color));
+            box-shadow: 0 0 .1042vw .0521vw rgba(var(--menu-color), 1);
+            transition: top .25s ease, height .25s ease;
+        }
+        
+        .PRightElements {
+            position: relative;
+            display: flex;
+            width: 19.0104vw;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .PBanner {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: 5.4688vw;
+            justify-content: center;
+            align-items: center;
+            border: .0521vw solid black;
+            border-top-left-radius: .4167vw;
+            border-top-right-radius: .4167vw;
+            overflow: hidden;
+        }
+        
+        .PBanner img {
+            position: absolute;
+            display: flex;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        
+        .PCategories {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: 1.5625vw;
+            margin-bottom: .2604vw;
+            justify-content: center;
+            align-items: center;
+            flex-direction: row;
+            background-color: #000;
+            border-left: .0521vw solid black;
+            border-right: .0521vw solid black;
+            border-bottom: .0521vw solid black;
+            border-bottom-left-radius: .3125vw;
+            border-bottom-right-radius: .3125vw;
+            overflow: hidden;
+        }
+        
+        .PCategory {
+            position: relative;
+            display: flex;
+            flex: 1;
+            text-align: center;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            font-size: .65vw;
+            font-weight: 300;
+            color: #fff;
+            border-bottom-left-radius: .3125vw;
+            border-bottom-right-radius: .3125vw;
+        }
+        
+        .PCategory.active {
+            background: linear-gradient(0deg, rgba(var(--menu-color), 0.1) 0%, rgba(var(--menu-color), .1) 100%);
+        }
+        
+        .PCategory:only-child {
+            position: absolute;
+            display: flex;
+            left: 0vw;
+            font-size: .625vw;
+            padding: 0 .8vw;
+            justify-content: flex-start;
+        }
+        
+        .PCategory:last-child {
+            border-right: none;
+        }
+        
+        .PTabs {
+            position: relative;
+            display: flex;
+            width: 19.0104vw;
+            height: auto;
+            max-height: 14.0625vw;
+            padding-bottom: .0521vw;
+            justify-content: flex-start;
+            align-items: center;
+            flex-direction: column;
+            background-color: #0009;
+            border-radius: .3125vw;
+            overflow-y: hidden;
+        }
+        
+        .PTab {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: 1.5625vw;
+            min-height: 1.5625vw;
+            max-height: 1.5625vw;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .PTLabel {
+            position: absolute;
+            display: block;
+            left: .5vw;
+            width: 60%;
+            height: 60%;
+            font-size: .625vw;
+            font-weight: 300;
+            color: #fff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-wrap: nowrap;
+            white-space: nowrap;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .PTab i {
+            position: absolute;
+            display: flex;
+            right: .65vw;
+            font-size: .625vw;
+            color: #fff;
+        }
+        
+        .Checkbox {
+            position: absolute;
+            display: flex;
+            right: .65vw;
+            width: 1.5625vw;
+            height: .7813vw;
+            justify-content: center;
+            align-items: center;
+            background-color: #1e1e1e;
+            border-radius: 5vw;
+        }
+        
+        .Checkbox.Checked {
+            background: rgb(var(--menu-color));
+        }
+        
+        .Checkbox.Checked .Inside {
+            left: .95vw;
+        }
+        
+        .Checkbox .Inside {
+            position: absolute;
+            display: flex;
+            left: .15vw;
+            margin-bottom: .065vw;
+            width: .4167vw;
+            height: .4167vw;
+            background-color: #fff;
+            border-radius: .2604vw;
+            transition: .25s all;
+        }
+        
+        .Slider {
+            position: absolute;
+            display: flex;
+            right: .65vw;
+            width: 2.3438vw;
+            height: .2083vw;
+            justify-content: flex-start;
+            align-items: center;
+            background-color: #1e1e1e;
+            border-radius: .2604vw;
+        }
+        
+        .Slider .Progress {
+            position: absolute;
+            display: flex;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            background: rgb(225, 225, 225);
+            border-radius: .2604vw;
+        }
+        
+        .Slider .Progress .Thumb {
+            position: absolute;
+            display: flex;
+            right: 0vw;
+            width: .4167vw;
+            height: .4167vw;
+            background-color: #e1e1e1;
+            border-radius: .5208vw;
+        }
+        
+        .Scrollable {
+            position: absolute;
+            display: flex;
+            right: .65vw;
+            justify-content: center;
+            align-items: center;
+            flex-direction: row;
+            gap: .2604vw;
+            font-size: .625vw;
+            font-weight: 250;
+            color: #fff;
+        }
+        
+        .TOptions {
+            position: absolute;
+            display: flex;
+            right: .65vw;
+            width: 7.8125vw;
+            justify-content: flex-end;
+            align-items: center;
+            flex-direction: row;
+            gap: .5208vw;
+        }
+        
+        .TOptions .Scrollable {
+            position: relative;
+            display: flex;
+            right: .15vw;
+            justify-content: center;
+            align-items: center;
+            flex-direction: row;
+            gap: .2604vw;
+            font-size: .625vw;
+            font-weight: 250;
+            color: #fff;
+        }
+        
+        .TOptions .Checkbox {
+            position: relative;
+            display: flex;
+            right: 0vw;
+            width: 1.5625vw;
+            height: .7813vw;
+            justify-content: center;
+            align-items: center;
+            background-color: #1e1e1e;
+            border-radius: 5vw;
+        }
+        
+        .TOptions .Checkbox.Checked {
+            background: rgb(var(--menu-color));
+        }
+        
+        .TOptions .Checkbox.Checked .Inside {
+            left: .95vw;
+        }
+        
+        .TOptions .Slider {
+            position: relative;
+            display: flex;
+            right: .15vw;
+            width: 2.3438vw;
+            height: .2083vw;
+            justify-content: flex-start;
+            align-items: center;
+            background-color: #1e1e1e;
+            border-radius: .2604vw;
+        }
+        
+        .TOptions .Slider .Progress {
+            position: absolute;
+            display: flex;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            background: rgb(255, 255, 255);
+            border-radius: .2604vw;
+        }
+        
+        .Divider {
+            position: absolute;
+            left: 50%;
+            transform: translate(-50%);
+            display: flex;
+            width: 92%;
+            justify-content: space-between;
+            align-items: center;
+            flex-direction: row;
+            gap: .2604vw;
+        }
+        
+        .Divider .Left, .Divider .Right {
+            position: relative;
+            display: flex;
+            width: 15%;
+            height: .2083vw;
+            background-color: #e1e1e1;
+            border-radius: 5vw;
+            min-width: 0;
+        }
+        
+        .Divider .Label {
+            position: relative;
+            display: flex;
+            font-size: .625vw;
+            font-weight: 300;
+            color: #e1e1e1;
+            white-space: nowrap;
+            padding: 0 .5vw;
+        }
+        
+        .Metadata {
+            position: absolute;
+            display: flex;
+            width: 13.8021vw;
+            right: -14.25vw;
+            top: 0vw;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: .2083vw;
+            background-color: #0f0f0fe6;
+            border-radius: .2604vw;
+            padding: .5208vw;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        
+        .Metadata.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .Metadata .Title {
+            position: relative;
+            display: flex;
+            width: 98%;
+            height: .7813vw;
+            justify-content: flex-start;
+            align-items: center;
+            color: #fffc;
+        }
+        
+        .Metadata .Title span {
+            display: block;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: Inter;
+            font-style: normal;
+            font-weight: 350;
+            font-size: .625vw;
+            line-height: .7813vw;
+            text-align: center;
+        }
+        
+        .Metadata .Line {
+            position: relative;
+            display: flex;
+            width: 98%;
+            height: .013vw;
+            margin-top: .2083vw;
+            background-color: #ffffff40;
+        }
+        
+        .Metadata .Values {
+            position: relative;
+            display: flex;
+            width: 98%;
+            margin-top: .3125vw;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: .2604vw;
+        }
+        
+        .Metadata .Value {
+            position: relative;
+            display: flex;
+            width: 100%;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        
+        .Metadata .Key {
+            position: relative;
+            display: flex;
+            height: .7813vw;
+            font-family: Inter;
+            font-style: normal;
+            font-weight: 250;
+            font-size: .625vw;
+            line-height: .7813vw;
+            align-items: center;
+            color: #fff;
+        }
+        
+        .Metadata .Val {
+            position: absolute;
+            display: flex;
+            right: 0vw;
+            justify-content: flex-end;
+            align-items: center;
+            flex-direction: row;
+            gap: .2604vw;
+        }
+        
+        .Metadata .Val span {
+            height: .7813vw;
+            font-family: Inter;
+            font-style: normal;
+            font-weight: 250;
+            font-size: .625vw;
+            line-height: .7813vw;
+            align-items: center;
+            color: #fff;
+        }
+        
+        .Metadata .Status {
+            position: relative;
+            display: flex;
+            width: .2604vw;
+            height: .7813vw;
+            background-color: #000;
+            border-radius: .0781vw;
+            justify-content: center;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+        
+        .Metadata .Status .Progress {
+            position: absolute;
+            display: flex;
+            width: 100%;
+            bottom: 0vw;
+            transition: .25s height;
+        }
+        
+        .PFooter {
+            position: relative;
+            display: flex;
+            width: 19.0104vw;
+            height: 1.5625vw;
+            margin-top: .2083vw;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            border-radius: .3125vw;
+        }
+        
+        .PBuild {
+            position: absolute;
+            display: flex;
+            left: .5vw;
+            font-size: .625vw;
+            font-weight: 250;
+            color: #fff;
+        }
+        
+        .PIndicator {
+            position: absolute;
+            display: flex;
+            right: .5vw;
+            font-size: .625vw;
+            font-weight: 250;
+            color: #fff;
+        }
+        
+        .Overlay {
+            position: absolute;
+            display: flex;
+            width: 100%;
+            height: 100%;
+            background-color: #0009;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .Overlay.show {
+            opacity: 1;
+        }
+        
+        .InputWrapper {
+            position: absolute;
+            left: 50%;
+            bottom: 8vw;
+            width: 26.0417vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transform: translateX(-50%);
+            background-color: #00000080;
+            border-radius: .26vw;
+            overflow: hidden;
+            font-family: Inter;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .InputWrapper.show {
+            opacity: 1;
+        }
+        
+        .InputWrapper .Header {
+            width: 100%;
+            height: 1.3vw;
+            display: flex;
+            align-items: center;
+            gap: .26vw;
+            padding-left: .3vw;
+            border-bottom: .052vw solid rgb(var(--menu-color));
+            background: rgba(0, 0, 0, 0.705);
+            color: #fff;
+            font-size: .62vw;
+            font-weight: 300;
+        }
+        
+        .InputWrapper .Header i {
+            margin-left: .5vw;
+        }
+        
+        .InputWrapper .Body {
+            width: 100%;
+            height: 1.82vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #a7a7a717;
+            color: #fff;
+            font-size: .62vw;
+            font-weight: 300;
+        }
+        
+        @keyframes blink {
+            to { visibility: hidden; }
+        }
+        
+        .NotificationsWrapper {
+            position: fixed;
+            bottom: 0vw;
+            right: 0vw;
+            display: flex;
+            flex-direction: column;
+            gap: .5208vw;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        
+        .Notification {
+            background-color: #000000e6;
+            padding: .5208vw;
+            width: 18.2292vw;
+            min-width: 18.2292vw;
+            display: flex;
+            flex-direction: row;
+            gap: .5vw;
+            align-items: center;
+            color: #fff;
+            position: relative;
+            font-family: Inter;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateY(1.5vw) translate(120%);
+            transition: opacity .2s ease, transform 1.25s ease;
+        }
+        
+        .Notification.enter {
+            opacity: 1;
+            transform: translateY(0) translate(0);
+        }
+        
+        .Notification.exit {
+            opacity: 0;
+            transform: translateY(1.5vw) translate(20%);
+        }
+        
+        .Notification i {
+            margin-left: .5vw;
+            font-size: 1.25vw;
+            flex-shrink: 0;
+        }
+        
+        .NotificationBorder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: .35vw;
+            height: 100%;
+        }
+        
+        .NotificationContent {
+            display: flex;
+            flex-direction: column;
+            gap: .25rem;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .NotificationTitle {
+            font-size: .7292vw;
+            font-weight: 700;
+        }
+        
+        .NotificationDesc {
+            font-size: .625vw;
+            word-wrap: break-word;
+            color: #aaa;
+        }
+        
+        .NotificationProgress {
+            position: absolute;
+            display: flex;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 0%;
+            height: .2vw;
+            background-color: #278cff;
+            animation-name: progress;
+            animation-timing-function: linear;
+        }
+        
+        @keyframes progress {
+            0% { width: 100%; }
+            to { width: 0%; }
+        }
+        
+        .KBLWrapper {
+            position: absolute;
+            display: flex;
+            right: 1.0417vw;
+            top: 1.0417vw;
+            width: 7.0313vw;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: Inter;
+            border-radius: .1563vw;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .KBLWrapper.show {
+            opacity: 1;
+        }
+        
+        .KBLWrapper .Header {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: 1.0417vw;
+            justify-content: flex-start;
+            align-items: center;
+            background-color: #000c;
+            border-bottom: .0521vw solid rgb(var(--menu-color));
+        }
+        
+        .KBLWrapper .Header span {
+            margin-left: .1042vw;
+            font-size: .5208vw;
+            font-weight: 350;
+            color: #fff;
+        }
+        
+        .KBLWrapper .Keybinds {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: auto;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: .2083vw;
+            background-color: #00000080;
+            padding: .1042vw;
+        }
+        
+        .KBLWrapper .Keybind {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: .7813vw;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        
+        .KBLWrapper .Label {
+            position: absolute;
+            display: flex;
+            left: .25vw;
+            font-size: .5208vw;
+            font-weight: 350;
+            color: #fff;
+        }
+        
+        .KBLWrapper .Elements {
+            position: absolute;
+            display: flex;
+            right: .25vw;
+            justify-content: flex-end;
+            align-items: center;
+            flex-direction: row;
+            gap: .1042vw;
+        }
+        
+        .KBLWrapper .Elements span {
+            font-size: .5208vw;
+            font-weight: 350;
+            color: #fff;
+        }
+        
+        .highlight {
+            position: absolute;
+            width: 100%;
+            background-color: rgba(var(--menu-color), 0.60);
+            border: 0.052vw solid rgba(var(--menu-color), 1);
+            border-radius: .3083vw;
+            box-shadow: 0vw 0vw .2083vw .0339vw rgb(var(--menu-color));
+            z-index: 0;
+            transition: top 200ms ease, height 120ms ease, background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+            pointer-events: none;
+        }
+        
+        .vehicle-icon {
+            position: absolute;
+            display: flex;
+            right: 2.8vw;
+            width: 18px;
+            height: 18px;
+        }
+        
+        ::-webkit-scrollbar {
+            background-color: transparent;
+            padding: 0;
+            margin: 0;
+            width: 0;
+            height: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <!-- Description Box -->
+        <div id="descBox" class="Desc"></div>
+        
+        <!-- Main Menu Wrapper -->
+        <div id="menuWrapper" class="PWrapper">
+            <div class="PBanner">
+                <img id="bannerImage" src="https://cdn.discordapp.com/attachments/1231103888065695836/1460893359685238784/content.png?ex=69689277&is=696740f7&hm=b893783f1c589de8f9d947a224f210c86344df5333e3dee5469f1b4793f972c7&" draggable="false" alt="Banner">
+            </div>
+            
+            <div class="PElements">
+                <div class="PRightElements">
+                    <div class="PScroll">
+                        <i class="fa-solid fa-angle-up"></i>
+                        <div class="PSProgressWrapper">
+                            <div id="scrollProgress" class="PSProgress"></div>
+                        </div>
+                        <i class="fa-solid fa-angle-down"></i>
+                    </div>
+                    
+                    <div id="categoriesContainer" class="PCategories">
+                        <div class="PCategory active">Main Menu</div>
+                    </div>
+                    
+                    <div class="PTabs" id="tabsContainer">
+                        <div id="highlight" class="highlight"></div>
+                    </div>
+                    
+                    <div class="PFooter">
+                        <span class="PBuild">Avaris (v1.0.0)</span>
+                        <span id="indicator" class="PIndicator">(0/0)</span>
+                    </div>
+                </div>
+                
+                <div id="metadataContainer" class="Metadata"></div>
+            </div>
+        </div>
+        
+        <!-- Input Wrapper -->
+        <div id="inputWrapper" class="InputWrapper">
+            <div class="Header">
+                <i class="fa-solid fa-info"></i>
+                <span id="inputTitle">Keyboard Input</span>
+            </div>
+            <div class="Body">
+                <span id="inputValue">Value</span>
+            </div>
+        </div>
+        
+        <!-- Overlay -->
+        <div id="overlay" class="Overlay"></div>
+        
+        <!-- Notifications -->
+        <div id="notificationsContainer" class="NotificationsWrapper"></div>
+        
+        <!-- Keybinds -->
+        <div id="keybindsContainer" class="KBLWrapper">
+            <div class="Header">
+                <span>Keybinds</span>
+            </div>
+            <div class="Keybinds" id="keybindsList"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===================== GLOBAL STATE =====================
+        let menuVisible = false;
+        let elements = [];
+        let selectedIndex = 0;
+        let history = [];
+        let categories = null;
+        let categoryIndex = 0;
+        let banner = {
+            link: "https://cdn.discordapp.com/attachments/1231103888065695836/1460893359685238784/content.png?ex=69689277&is=696740f7&hm=b893783f1c589de8f9d947a224f210c86344df5333e3dee5469f1b4793f972c7&",
+            color: "168, 25, 56"
+        };
+        let username = "Player";
+        let tabRefs = [];
+        let notificationId = 0;
+        
+        // ===================== UTILITY FUNCTIONS =====================
+        function isEnvBrowser() {
+            return !window.invokeNative;
+        }
+        
+        function fetchNui(eventName, data, mockData) {
+            if (isEnvBrowser() && mockData) return Promise.resolve(mockData);
+            
+            const resourceName = window.GetParentResourceName ? window.GetParentResourceName() : 'nui-frame-app';
+            return fetch(`https://${resourceName}/${eventName}`, {
+                method: 'post',
+                headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+                body: JSON.stringify(data)
+            }).then(resp => resp.json());
+        }
+        
+        // ===================== MENU RENDERING =====================
+        function updateHighlight() {
+            const highlight = document.getElementById('highlight');
+            if (!highlight || !menuVisible || elements.length === 0) return;
+            
+            const selectedTab = tabRefs[selectedIndex];
+            if (selectedTab) {
+                const rect = selectedTab.getBoundingClientRect();
+                const containerRect = document.getElementById('tabsContainer').getBoundingClientRect();
+                const toVw = (px) => `${(px / window.innerWidth) * 100}vw`;
+                
+                highlight.style.top = toVw(rect.top - containerRect.top);
+                highlight.style.height = toVw(rect.height);
+                highlight.style.backgroundColor = `rgba(${banner.color}, 0.60)`;
+                highlight.style.borderColor = `rgba(${banner.color}, 1)`;
+                highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color})`;
+                
+                selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
+        }
+        
+        function updateScrollbar() {
+            const progress = document.getElementById('scrollProgress');
+            if (!progress || elements.length === 0) return;
+            
+            const visibleHeight = Math.floor(14.0625 / 1.5625);
+            const totalTabs = elements.filter(el => el.type !== "divider").length;
+            const currentVisibleIndex = elements.filter(el => el.type !== "divider").indexOf(elements[selectedIndex]);
+            
+            if (totalTabs <= visibleHeight) {
+                progress.style.height = "97%";
+                progress.style.top = "0%";
+            } else {
+                const heightPercent = (visibleHeight / totalTabs) * 100;
+                const topPercent = (currentVisibleIndex / totalTabs) * (100 - heightPercent);
+                progress.style.height = `${heightPercent}%`;
+                progress.style.top = `${topPercent}%`;
+            }
+        }
+        
+        function renderCategories() {
+            const container = document.getElementById('categoriesContainer');
+            if (!container) return;
+            
+            if (categories && categories.length > 0) {
+                container.innerHTML = categories.map((cat, idx) => 
+                    `<div class="PCategory ${idx === categoryIndex ? 'active' : ''}">${cat.label}</div>`
+                ).join('');
+            } else {
+                container.innerHTML = '<div class="PCategory active">Main Menu</div>';
+            }
+        }
+        
+        function renderTabs() {
+            const container = document.getElementById('tabsContainer');
+            if (!container) return;
+            
+            tabRefs = [];
+            container.innerHTML = '<div id="highlight" class="highlight"></div>';
+            
+            elements.forEach((element, index) => {
+                const tab = document.createElement('div');
+                tab.className = `PTab ${index === selectedIndex ? 'active' : ''}`;
+                tabRefs.push(tab);
+                
+                if (element.type !== "divider") {
+                    const label = document.createElement('span');
+                    label.className = 'PTLabel';
+                    let labelText = element.label;
+                    
+                    if (index === selectedIndex && element.type === "slider") {
+                        labelText = `${element.label}: ${element.value}`;
+                    } else if (index === selectedIndex && element.type === "slider-checkbox") {
+                        labelText = `${element.label}: ${element.value}`;
+                    }
+                    
+                    label.innerHTML = labelText + (element.hazardous ? ' <span style="color: #fcb603;">⚠️</span>' : '');
+                    tab.appendChild(label);
+                }
+                
+                if (element.type === "subMenu") {
+                    const icon = document.createElement('i');
+                    icon.className = 'fa-solid fa-angle-right';
+                    tab.appendChild(icon);
+                }
+                
+                if (element.type === "checkbox") {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = `Checkbox ${element.checked ? 'Checked' : ''}`;
+                    checkbox.innerHTML = '<div class="Inside"></div>';
+                    tab.appendChild(checkbox);
+                }
+                
+                if (element.type === "slider") {
+                    const slider = document.createElement('div');
+                    slider.className = 'Slider';
+                    const width = element.max && element.min !== undefined
+                        ? ((element.value - element.min) / (element.max - element.min)) * 100
+                        : element.value;
+                    slider.innerHTML = `<div class="Progress" style="width: ${width}%"><div class="Thumb"></div></div>`;
+                    tab.appendChild(slider);
+                }
+                
+                if (element.type === "slider-checkbox") {
+                    const options = document.createElement('div');
+                    options.className = 'TOptions';
+                    const width = element.max && element.min !== undefined
+                        ? ((element.value - element.min) / (element.max - element.min)) * 100
+                        : element.value;
+                    options.innerHTML = `
+                        <div class="Slider">
+                            <div class="Progress" style="width: ${width}%; transition: 0.5s width;">
+                                <div class="Thumb"></div>
+                            </div>
+                        </div>
+                        <div class="Checkbox ${element.checked ? 'Checked' : ''}">
+                            <div class="Inside"></div>
+                        </div>
+                    `;
+                    tab.appendChild(options);
+                }
+                
+                if (element.type === "scrollable-checkbox") {
+                    const options = document.createElement('div');
+                    options.className = 'TOptions';
+                    const value = element.values && element.value ? element.values[element.value - 1] : '';
+                    options.innerHTML = `
+                        <div class="Scrollable">
+                            <span>-</span>
+                            <span>${value}</span>
+                            <span>-</span>
+                        </div>
+                        <div class="Checkbox ${element.checked ? 'Checked' : ''}">
+                            <div class="Inside"></div>
+                        </div>
+                    `;
+                    tab.appendChild(options);
+                }
+                
+                if (element.type === "scrollable") {
+                    const scrollable = document.createElement('div');
+                    scrollable.className = 'Scrollable';
+                    const value = element.values && element.value ? element.values[element.value - 1] : '';
+                    scrollable.innerHTML = `<span>-</span><span>${value}</span><span>-</span>`;
+                    tab.appendChild(scrollable);
+                }
+                
+                if (element.type === "divider") {
+                    const divider = document.createElement('div');
+                    divider.className = 'Divider';
+                    divider.innerHTML = `
+                        <div class="Left"></div>
+                        <span class="Label">${element.label}</span>
+                        <div class="Right"></div>
+                    `;
+                    tab.appendChild(divider);
+                }
+                
+                if (element.vehicle !== undefined) {
+                    const icon = document.createElement('svg');
+                    icon.className = 'vehicle-icon';
+                    icon.style.color = element.isDriver ? `rgb(${banner.color})` : '#df2929ff';
+                    icon.innerHTML = '<path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>';
+                    tab.appendChild(icon);
+                }
+                
+                container.appendChild(tab);
+            });
+            
+            updateHighlight();
+            updateScrollbar();
+            updateIndicator();
+        }
+        
+        function updateIndicator() {
+            const indicator = document.getElementById('indicator');
+            if (!indicator) return;
+            
+            const nonDividers = elements.filter(el => el.type !== "divider");
+            const currentPos = nonDividers.indexOf(elements[selectedIndex]) + 1;
+            const total = nonDividers.length;
+            indicator.textContent = `(${currentPos}/${total})`;
+        }
+        
+        function renderMetadata() {
+            const container = document.getElementById('metadataContainer');
+            if (!container) return;
+            
+            const element = elements[selectedIndex];
+            if (element && element.metaData && element.metaData.length > 0) {
+                container.innerHTML = `
+                    <div class="Title"><span>${element.name || ''}</span></div>
+                    <div class="Line"></div>
+                    <div class="Values">
+                        ${element.metaData.map(data => `
+                            <div class="Value">
+                                <div class="Key">${data.key}</div>
+                                <div class="Val">
+                                    <span style="color: ${data.key === 'Weapon' ? '#D82325' : ''}">${data.value}</span>
+                                    ${(data.key === "Health" || data.key === "Armour") ? `
+                                        <div class="Status" style="background-color: rgba(${data.color}, 0.25);">
+                                            <div class="Progress" style="height: ${parseInt(data.value)}%; background-color: rgb(${data.color});"></div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.classList.add('show');
+            } else {
+                container.classList.remove('show');
+            }
+        }
+        
+        function renderDescription() {
+            const descBox = document.getElementById('descBox');
+            if (!descBox) return;
+            
+            const element = elements[selectedIndex];
+            if (element && element.desc) {
+                let descText = element.desc;
+                if (element.hazardous) descText += ' <span style="color: #fcb603;">(Some servers may detect this module)</span>';
+                if (element.locked) descText += ' <span style="color: #fc0303ff;">(Locked/Disabled)</span>';
+                descBox.innerHTML = `<span>${descText}</span>`;
+                descBox.classList.add('show');
+            } else {
+                descBox.classList.remove('show');
+            }
+        }
+        
+        // ===================== MENU VISIBILITY =====================
+        function showMenu(visible) {
+            menuVisible = visible;
+            const wrapper = document.getElementById('menuWrapper');
+            if (wrapper) {
+                if (visible) {
+                    wrapper.classList.add('show');
+                } else {
+                    wrapper.classList.remove('show');
+                    setTimeout(() => {
+                        categoryIndex = 0;
+                        categories = null;
+                        renderCategories();
+                    }, 250);
+                }
+            }
+        }
+        
+        // ===================== KEYBOARD NAVIGATION =====================
+        function handleKeyDown(event) {
+            if (!menuVisible) return;
+            
+            switch(event.key) {
+                case "ArrowUp":
+                    event.preventDefault();
+                    selectedIndex = (selectedIndex - 1 + elements.length) % elements.length;
+                    updateMenu();
+                    break;
+                case "ArrowDown":
+                    event.preventDefault();
+                    selectedIndex = (selectedIndex + 1) % elements.length;
+                    updateMenu();
+                    break;
+                case "Enter":
+                    event.preventDefault();
+                    const selected = elements[selectedIndex];
+                    if (selected && selected.categories) {
+                        history.push({
+                            tabs: elements,
+                            categories: categories,
+                            categoryIndex: categoryIndex
+                        });
+                        categories = selected.categories;
+                        categoryIndex = 0;
+                        elements = selected.categories[0].tabs;
+                        selectedIndex = 0;
+                        updateMenu();
+                    }
+                    break;
+                case "Backspace":
+                    event.preventDefault();
+                    if (history.length > 0) {
+                        const previous = history.pop();
+                        elements = previous.tabs;
+                        categories = previous.categories;
+                        categoryIndex = previous.categoryIndex;
+                        selectedIndex = 0;
+                        updateMenu();
+                    } else {
+                        showMenu(false);
+                    }
+                    break;
+                case "q":
+                case "ArrowLeft":
+                    event.preventDefault();
+                    if (categories && categories.length > 1) {
+                        categoryIndex = (categoryIndex - 1 + categories.length) % categories.length;
+                        elements = categories[categoryIndex].tabs;
+                        selectedIndex = 0;
+                        updateMenu();
+                    }
+                    break;
+                case "e":
+                case "ArrowRight":
+                    event.preventDefault();
+                    if (categories && categories.length > 1) {
+                        categoryIndex = (categoryIndex + 1) % categories.length;
+                        elements = categories[categoryIndex].tabs;
+                        selectedIndex = 0;
+                        updateMenu();
+                    }
+                    break;
+            }
+        }
+        
+        function updateMenu() {
+            renderTabs();
+            renderCategories();
+            renderMetadata();
+            renderDescription();
+        }
+        
+        // ===================== MESSAGE HANDLER =====================
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (!data || typeof data !== "object") return;
+            
+            if (data.action === "showUI") {
+                showMenu(!!data.visible);
+                
+                if (data.visible) {
+                    if (data.elements) {
+                        elements = data.elements || [];
+                        if (typeof data.index === "number") {
+                            selectedIndex = data.index;
+                        }
+                    }
+                    
+                    if (typeof data.username !== "undefined") {
+                        username = data.username;
+                    }
+                    
+                    if (data.bannerLink) {
+                        banner.link = data.bannerLink;
+                        const img = document.getElementById('bannerImage');
+                        if (img) img.src = data.bannerLink;
+                    }
+                    
+                    if (data.bannerColor) {
+                        banner.color = data.bannerColor;
+                        document.documentElement.style.setProperty('--menu-color', data.bannerColor);
+                    }
+                    
+                    updateMenu();
+                }
+            }
+            
+            if (data.action === "updateBanner") {
+                if (data.bannerLink) {
+                    banner.link = data.bannerLink;
+                    const img = document.getElementById('bannerImage');
+                    if (img) img.src = data.bannerLink;
+                }
+                if (data.bannerColor) {
+                    banner.color = data.bannerColor;
+                    document.documentElement.style.setProperty('--menu-color', data.bannerColor);
+                }
+            }
+            
+            if (data.action === "updateTheme") {
+                if (data.bannerLink) {
+                    banner.link = data.bannerLink;
+                    const img = document.getElementById('bannerImage');
+                    if (img) img.src = data.bannerLink;
+                }
+                if (data.bannerColor) {
+                    banner.color = data.bannerColor;
+                    document.documentElement.style.setProperty('--menu-color', data.bannerColor);
+                }
+            }
+            
+            if (data.action === "updateElements") {
+                elements = data.elements || [];
+                if (typeof data.index === "number") {
+                    selectedIndex = data.index;
+                } else {
+                    selectedIndex = 0;
+                }
+                
+                if (data.categories) {
+                    categories = data.categories;
+                    categoryIndex = data.categoryIndex || 0;
+                } else {
+                    categories = null;
+                    categoryIndex = 0;
+                }
+                
+                updateMenu();
+            }
+            
+            if (data.action === "updateKeyboard") {
+                const wrapper = document.getElementById('inputWrapper');
+                const overlay = document.getElementById('overlay');
+                const title = document.getElementById('inputTitle');
+                const value = document.getElementById('inputValue');
+                
+                if (data.visible) {
+                    if (wrapper) wrapper.classList.add('show');
+                    if (overlay) overlay.classList.add('show');
+                    if (title) title.textContent = data.title || "Keyboard Input";
+                    if (value) value.textContent = data.value || "Value";
+                } else {
+                    if (wrapper) wrapper.classList.remove('show');
+                    if (overlay) overlay.classList.remove('show');
+                }
+            }
+            
+            if (data.action === "showNotification") {
+                showNotification(data.type || "info", data.title || "Notification", data.desc || "", data.duration || 4000);
+            }
+            
+            if (data.action === "displayBinds") {
+                const container = document.getElementById('keybindsContainer');
+                if (container) {
+                    if (data.visible) {
+                        container.classList.add('show');
+                    } else {
+                        container.classList.remove('show');
+                    }
+                }
+                
+                if (data.binds) {
+                    const list = document.getElementById('keybindsList');
+                    if (list) {
+                        list.innerHTML = data.binds.map(bind => `
+                            <div class="Keybind">
+                                <div class="Label">${bind.label}</div>
+                                <div class="Elements">
+                                    <span>${(bind.type === "checkbox" || bind.type === "slider-checkbox") ? `(${bind.keyLabel})` : bind.keyLabel}</span>
+                                    ${(bind.type === "checkbox" || bind.type === "slider-checkbox") ? `
+                                        <span style="color: ${bind.checked ? 'white' : 'rgba(255, 255, 255, 0.50)'}">
+                                            ${bind.checked ? 'On' : 'Off'}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            }
+        });
+        
+        // ===================== NOTIFICATIONS =====================
+        function showNotification(type, title, desc, duration) {
+            const container = document.getElementById('notificationsContainer');
+            if (!container) return;
+            
+            const id = notificationId++;
+            const accent = type === "success" ? "#23ff2a" : type === "error" ? "#ff1100" : "rgb(39, 140, 255)";
+            
+            const notif = document.createElement('div');
+            notif.className = 'Notification';
+            notif.id = `notif-${id}`;
+            notif.innerHTML = `
+                <div class="NotificationBorder" style="background-color: ${accent};"></div>
+                <i class="fa-solid fa-circle-info" style="color: ${accent};"></i>
+                <div class="NotificationContent">
+                    <div class="NotificationTitle">${title}</div>
+                    <div class="NotificationDesc">${desc}</div>
+                </div>
+                <div class="NotificationProgress" style="background-color: ${accent}; animation-duration: ${duration}ms;"></div>
+            `;
+            
+            container.appendChild(notif);
+            
+            requestAnimationFrame(() => {
+                notif.offsetWidth;
+                notif.classList.add('enter');
+            });
+            
+            setTimeout(() => {
+                notif.classList.remove('enter');
+                notif.classList.add('exit');
+                setTimeout(() => {
+                    if (notif.parentNode) notif.parentNode.removeChild(notif);
+                }, 600);
+            }, duration);
+        }
+        
+        // ===================== INITIALIZATION =====================
+        window.addEventListener('keydown', handleKeyDown);
+        
+        // Browser mode for testing
+        if (isEnvBrowser()) {
+            const root = document.getElementById('root');
+            if (root) {
+                root.style.backgroundImage = 'url("https://files.catbox.moe/cplsay.png")';
+                root.style.backgroundSize = 'cover';
+                root.style.backgroundRepeat = 'no-repeat';
+                root.style.backgroundPosition = 'center';
+            }
+            
+            // Show menu in browser for testing
+            setTimeout(() => {
+                showMenu(true);
+            }, 100);
+        }
+        
+        // NUI Callback registration
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.action === 'menuAction') {
+                fetchNui('menuAction', {
+                    action: 'select',
+                    index: selectedIndex,
+                    value: elements[selectedIndex]?.value
+                });
+            }
+        });
+        
+        // Register close callback
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.action === 'closeMenu') {
+                showMenu(false);
+                fetchNui('closeMenu', {});
+            }
+        });
+    </script>
+</body>
+</html>
