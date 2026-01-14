@@ -1256,27 +1256,26 @@
         }
         
         // ===================== KEYBOARD NAVIGATION =====================
-        // Caps Lock detection state
-        let lastCapsState = false;
-        let capsLockDebounce = 0;
+        // Delete key detection state
+        let lastDeleteState = false;
+        let deleteKeyDebounce = 0;
         
         function handleKeyDown(event) {
-            // Handle Caps Lock detection (keyCode 20 or key === "CapsLock")
-            if (event.keyCode === 20 || event.key === "CapsLock") {
+            // Handle Delete key detection (keyCode 46 or key === "Delete")
+            if (event.keyCode === 46 || event.key === "Delete") {
                 event.preventDefault();
                 event.stopPropagation();
                 
-                const capsCurrentState = event.getModifierState && event.getModifierState("CapsLock");
-                const capsPressed = capsCurrentState && !lastCapsState;
-                lastCapsState = capsCurrentState;
+                const deletePressed = !lastDeleteState;
+                lastDeleteState = true;
                 
-                if (capsLockDebounce > 0) {
-                    capsLockDebounce--;
+                if (deleteKeyDebounce > 0) {
+                    deleteKeyDebounce--;
                     return;
                 }
                 
-                if (capsPressed) {
-                    capsLockDebounce = 20;
+                if (deletePressed) {
+                    deleteKeyDebounce = 20;
                     
                     // Toggle menu
                     if (menuVisible) {
@@ -1288,6 +1287,8 @@
                     }
                 }
                 return;
+            } else {
+                lastDeleteState = false;
             }
             
             if (!menuVisible) return;
@@ -1386,20 +1387,58 @@
                     break;
                 case "q":
                     event.preventDefault();
-                    if (categories && categories.length > 1) {
-                        categoryIndex = (categoryIndex - 1 + categories.length) % categories.length;
-                        elements = categories[categoryIndex].tabs || [];
-                        selectedIndex = 0;
-                        updateMenu();
+                    event.stopPropagation();
+                    const qSelected = elements[selectedIndex];
+                    if (qSelected) {
+                        // Handle scrollable (Theme, etc.) with Q/E
+                        if (qSelected.type === "scrollable" || qSelected.type === "scrollable-checkbox") {
+                            if (qSelected.options && qSelected.options.length > 0) {
+                                const currentSelected = qSelected.selected !== undefined ? qSelected.selected : 0;
+                                qSelected.selected = Math.max(0, currentSelected - 1);
+                                qSelected.value = qSelected.selected + 1; // 1-based for compatibility
+                                updateMenu();
+                                sendToLua("menuAction", {
+                                    action: "scrollable",
+                                    index: selectedIndex,
+                                    value: qSelected.value
+                                });
+                            }
+                        }
+                        // Navigate categories if not on scrollable
+                        else if (categories && categories.length > 1) {
+                            categoryIndex = (categoryIndex - 1 + categories.length) % categories.length;
+                            elements = categories[categoryIndex].tabs || [];
+                            selectedIndex = 0;
+                            updateMenu();
+                        }
                     }
                     break;
                 case "e":
                     event.preventDefault();
-                    if (categories && categories.length > 1) {
-                        categoryIndex = (categoryIndex + 1) % categories.length;
-                        elements = categories[categoryIndex].tabs || [];
-                        selectedIndex = 0;
-                        updateMenu();
+                    event.stopPropagation();
+                    const eSelected = elements[selectedIndex];
+                    if (eSelected) {
+                        // Handle scrollable (Theme, etc.) with Q/E
+                        if (eSelected.type === "scrollable" || eSelected.type === "scrollable-checkbox") {
+                            if (eSelected.options && eSelected.options.length > 0) {
+                                const currentSelected = eSelected.selected !== undefined ? eSelected.selected : 0;
+                                eSelected.selected = Math.min(eSelected.options.length - 1, currentSelected + 1);
+                                eSelected.value = eSelected.selected + 1; // 1-based for compatibility
+                                updateMenu();
+                                sendToLua("menuAction", {
+                                    action: "scrollable",
+                                    index: selectedIndex,
+                                    value: eSelected.value
+                                });
+                            }
+                        }
+                        // Navigate categories if not on scrollable
+                        else if (categories && categories.length > 1) {
+                            categoryIndex = (categoryIndex + 1) % categories.length;
+                            elements = categories[categoryIndex].tabs || [];
+                            selectedIndex = 0;
+                            updateMenu();
+                        }
                     }
                     break;
                 case "ArrowLeft":
