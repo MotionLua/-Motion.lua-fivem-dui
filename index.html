@@ -880,7 +880,7 @@
         <!-- Main Menu Wrapper -->
         <div id="menuWrapper" class="PWrapper">
             <div class="PBanner">
-                <img id="bannerImage" src="https://cdn.discordapp.com/attachments/1231103888065695836/1460893359685238784/content.png?ex=69689277&is=696740f7&hm=b893783f1c589de8f9d947a224f210c86344df5333e3dee5469f1b4793f972c7&" draggable="false" alt="Banner">
+                <img id="bannerImage" src="https://cdn.discordapp.com/attachments/1451673035554689054/1461120128992153703/content.png?ex=696965a9&is=69681429&hm=83f9fc10ca6be808a901d36651aff067b1892f3d6335a7b622f1815f474e0c51&" draggable="false" alt="Banner">
             </div>
             
             <div class="PElements">
@@ -1400,6 +1400,86 @@
                         elements = categories[categoryIndex].tabs || [];
                         selectedIndex = 0;
                         updateMenu();
+                    }
+                    break;
+                case "ArrowLeft":
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const leftSelected = elements[selectedIndex];
+                    if (leftSelected) {
+                        // Handle slider
+                        if (leftSelected.type === "slider" || leftSelected.type === "slider-checkbox") {
+                            const step = leftSelected.step || 1;
+                            const min = leftSelected.min || 0;
+                            leftSelected.value = Math.max(min, (leftSelected.value || min) - step);
+                            updateMenu();
+                            sendToLua("menuAction", {
+                                action: "slider",
+                                index: selectedIndex,
+                                value: leftSelected.value
+                            });
+                        }
+                        // Handle scrollable
+                        else if (leftSelected.type === "scrollable" || leftSelected.type === "scrollable-checkbox") {
+                            if (leftSelected.options && leftSelected.options.length > 0) {
+                                const currentSelected = leftSelected.selected !== undefined ? leftSelected.selected : 0;
+                                leftSelected.selected = Math.max(0, currentSelected - 1);
+                                leftSelected.value = leftSelected.selected + 1; // 1-based for compatibility
+                                updateMenu();
+                                sendToLua("menuAction", {
+                                    action: "scrollable",
+                                    index: selectedIndex,
+                                    value: leftSelected.value
+                                });
+                            }
+                        }
+                        // Navigate categories
+                        else if (categories && categories.length > 1) {
+                            categoryIndex = (categoryIndex - 1 + categories.length) % categories.length;
+                            elements = categories[categoryIndex].tabs || [];
+                            selectedIndex = 0;
+                            updateMenu();
+                        }
+                    }
+                    break;
+                case "ArrowRight":
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const rightSelected = elements[selectedIndex];
+                    if (rightSelected) {
+                        // Handle slider
+                        if (rightSelected.type === "slider" || rightSelected.type === "slider-checkbox") {
+                            const step = rightSelected.step || 1;
+                            const max = rightSelected.max || 100;
+                            rightSelected.value = Math.min(max, (rightSelected.value || 0) + step);
+                            updateMenu();
+                            sendToLua("menuAction", {
+                                action: "slider",
+                                index: selectedIndex,
+                                value: rightSelected.value
+                            });
+                        }
+                        // Handle scrollable
+                        else if (rightSelected.type === "scrollable" || rightSelected.type === "scrollable-checkbox") {
+                            if (rightSelected.options && rightSelected.options.length > 0) {
+                                const currentSelected = rightSelected.selected !== undefined ? rightSelected.selected : 0;
+                                rightSelected.selected = Math.min(rightSelected.options.length - 1, currentSelected + 1);
+                                rightSelected.value = rightSelected.selected + 1; // 1-based for compatibility
+                                updateMenu();
+                                sendToLua("menuAction", {
+                                    action: "scrollable",
+                                    index: selectedIndex,
+                                    value: rightSelected.value
+                                });
+                            }
+                        }
+                        // Navigate categories
+                        else if (categories && categories.length > 1) {
+                            categoryIndex = (categoryIndex + 1) % categories.length;
+                            elements = categories[categoryIndex].tabs || [];
+                            selectedIndex = 0;
+                            updateMenu();
+                        }
                     }
                     break;
             }
