@@ -1256,7 +1256,40 @@
         }
         
         // ===================== KEYBOARD NAVIGATION =====================
+        // Caps Lock detection state
+        let lastCapsState = false;
+        let capsLockDebounce = 0;
+        
         function handleKeyDown(event) {
+            // Handle Caps Lock detection (keyCode 20 or key === "CapsLock")
+            if (event.keyCode === 20 || event.key === "CapsLock") {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const capsCurrentState = event.getModifierState && event.getModifierState("CapsLock");
+                const capsPressed = capsCurrentState && !lastCapsState;
+                lastCapsState = capsCurrentState;
+                
+                if (capsLockDebounce > 0) {
+                    capsLockDebounce--;
+                    return;
+                }
+                
+                if (capsPressed) {
+                    capsLockDebounce = 20;
+                    
+                    // Toggle menu
+                    if (menuVisible) {
+                        showMenu(false);
+                        sendToLua("closeMenu", {});
+                    } else {
+                        // Menu opening is handled by Lua, but we can request it
+                        sendToLua("openMenu", {});
+                    }
+                }
+                return;
+            }
+            
             if (!menuVisible) return;
             
             // Skip if typing in input
