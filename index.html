@@ -969,6 +969,27 @@
             }).then(resp => resp.json());
         }
         
+        // Send message to Lua via MachoCreateDui (using window.postMessage to parent)
+        function sendToLua(action, data) {
+            // Try to send via MachoCreateDui message system
+            // The parent window (MachoCreateDui) should handle this
+            if (window.parent && window.parent !== window) {
+                try {
+                    window.parent.postMessage({
+                        action: action,
+                        ...data
+                    }, '*');
+                } catch (e) {
+                    console.error("Failed to send message to parent:", e);
+                }
+            }
+            
+            // Also try NUI callback for compatibility
+            if (!isEnvBrowser()) {
+                fetchNui(action, data).catch(() => {});
+            }
+        }
+        
         // ===================== MENU RENDERING =====================
         function updateHighlight() {
             const highlight = document.getElementById('highlight');
@@ -1094,11 +1115,19 @@
                 if (element.type === "scrollable-checkbox") {
                     const options = document.createElement('div');
                     options.className = 'TOptions';
-                    const value = element.values && element.value ? element.values[element.value - 1] : '';
+                    let displayValue = '';
+                    // Lua sends value as 1-based index, HTML arrays are 0-based
+                    if (element.values && Array.isArray(element.values) && element.value !== undefined) {
+                        const index = Math.max(0, Math.min(element.values.length - 1, (element.value || 1) - 1));
+                        displayValue = element.values[index] || '';
+                    } else if (element.options && Array.isArray(element.options) && element.selected !== undefined) {
+                        const option = element.options[element.selected];
+                        displayValue = option ? (option.label || option.value || option) : '';
+                    }
                     options.innerHTML = `
                         <div class="Scrollable">
                             <span>-</span>
-                            <span>${value}</span>
+                            <span>${displayValue}</span>
                             <span>-</span>
                         </div>
                         <div class="Checkbox ${element.checked ? 'Checked' : ''}">
@@ -1111,8 +1140,16 @@
                 if (element.type === "scrollable") {
                     const scrollable = document.createElement('div');
                     scrollable.className = 'Scrollable';
-                    const value = element.values && element.value ? element.values[element.value - 1] : '';
-                    scrollable.innerHTML = `<span>-</span><span>${value}</span><span>-</span>`;
+                    let displayValue = '';
+                    // Lua sends value as 1-based index, HTML arrays are 0-based
+                    if (element.values && Array.isArray(element.values) && element.value !== undefined) {
+                        const index = Math.max(0, Math.min(element.values.length - 1, (element.value || 1) - 1));
+                        displayValue = element.values[index] || '';
+                    } else if (element.options && Array.isArray(element.options) && element.selected !== undefined) {
+                        const option = element.options[element.selected];
+                        displayValue = option ? (option.label || option.value || option) : '';
+                    }
+                    scrollable.innerHTML = `<span>-</span><span>${displayValue}</span><span>-</span>`;
                     tab.appendChild(scrollable);
                 }
                 
@@ -1222,62 +1259,112 @@
         function handleKeyDown(event) {
             if (!menuVisible) return;
             
+            // Skip if typing in input
+            if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                return;
+            }
+            
             switch(event.key) {
                 case "ArrowUp":
                     event.preventDefault();
-                    selectedIndex = (selectedIndex - 1 + elements.length) % elements.length;
-                    updateMenu();
+                    event.stopPropagation();
+                    if (elements.length > 0) {
+                        // Skip dividers
+                        let newIndex = selectedIndex;
+                        do {
+                            newIndex = (newIndex - 1 + elements.length) % elements.length;
+                        } while (elements[newIndex] && elements[newIndex].type === "divider" && newIndex !== selectedIndex);
+                        selectedIndex = newIndex;
+                        updateMenu();
+                    }
                     break;
                 case "ArrowDown":
                     event.preventDefault();
-                    selectedIndex = (selectedIndex + 1) % elements.length;
-                    updateMenu();
+                    event.stopPropagation();
+                    if (elements.length > 0) {
+                        // Skip dividers
+                        let newIndex = selectedIndex;
+                        do {
+                            newIndex = (newIndex + 1) % elements.length;
+                        } while (elements[newIndex] && elements[newIndex].type === "divider" && newIndex !== selectedIndex);
+                        selectedIndex = newIndex;
+                        updateMenu();
+                    }
                     break;
                 case "Enter":
                     event.preventDefault();
                     const selected = elements[selectedIndex];
-                    if (selected && selected.categories) {
-                        history.push({
-                            tabs: elements,
-                            categories: categories,
-                            categoryIndex: categoryIndex
-                        });
-                        categories = selected.categories;
-                        categoryIndex = 0;
-                        elements = selected.categories[0].tabs;
-                        selectedIndex = 0;
-                        updateMenu();
+                    if (selected) {
+                        if (selected.type === "subMenu" && selected.categories && selected.categories.length > 0) {
+                            history.push({
+                                tabs: elements,
+                                categories: categories,
+                                categoryIndex: categoryIndex,
+                                selectedIndex: selectedIndex
+                            });
+                            categories = selected.categories;
+                            categoryIndex = 0;
+                            elements = selected.categories[0].tabs || [];
+                            selectedIndex = 0;
+                            updateMenu();
+                            
+                            // Send message back to Lua
+                            sendToLua("menuAction", {
+                                action: "enterSubmenu",
+                                label: selected.label
+                            });
+                        } else if (selected.type === "button") {
+                            // Execute button action
+                            sendToLua("menuAction", {
+                                action: "button",
+                                index: selectedIndex,
+                                label: selected.label
+                            });
+                        } else if (selected.type === "checkbox") {
+                            // Toggle checkbox
+                            selected.checked = !selected.checked;
+                            updateMenu();
+                            sendToLua("menuAction", {
+                                action: "checkbox",
+                                index: selectedIndex,
+                                label: selected.label,
+                                checked: selected.checked
+                            });
+                        }
                     }
                     break;
                 case "Backspace":
                     event.preventDefault();
                     if (history.length > 0) {
                         const previous = history.pop();
-                        elements = previous.tabs;
+                        elements = previous.tabs || [];
                         categories = previous.categories;
-                        categoryIndex = previous.categoryIndex;
-                        selectedIndex = 0;
+                        categoryIndex = previous.categoryIndex || 0;
+                        selectedIndex = previous.selectedIndex || 0;
                         updateMenu();
+                        
+                        sendToLua("menuAction", {
+                            action: "goBack"
+                        });
                     } else {
                         showMenu(false);
+                        sendToLua("closeMenu", {});
                     }
                     break;
                 case "q":
-                case "ArrowLeft":
                     event.preventDefault();
                     if (categories && categories.length > 1) {
                         categoryIndex = (categoryIndex - 1 + categories.length) % categories.length;
-                        elements = categories[categoryIndex].tabs;
+                        elements = categories[categoryIndex].tabs || [];
                         selectedIndex = 0;
                         updateMenu();
                     }
                     break;
                 case "e":
-                case "ArrowRight":
                     event.preventDefault();
                     if (categories && categories.length > 1) {
                         categoryIndex = (categoryIndex + 1) % categories.length;
-                        elements = categories[categoryIndex].tabs;
+                        elements = categories[categoryIndex].tabs || [];
                         selectedIndex = 0;
                         updateMenu();
                     }
@@ -1293,19 +1380,36 @@
         }
         
         // ===================== MESSAGE HANDLER =====================
+        // Handle messages from MachoCreateDui (via window.addEventListener)
         window.addEventListener('message', (event) => {
-            const data = event.data;
+            let data = event.data;
+            
+            // Handle string JSON from MachoSendDuiMessage
+            if (typeof data === "string") {
+                try {
+                    data = JSON.parse(data);
+                } catch (e) {
+                    console.error("Failed to parse message data:", e);
+                    return;
+                }
+            }
+            
             if (!data || typeof data !== "object") return;
             
             if (data.action === "showUI") {
                 showMenu(!!data.visible);
                 
                 if (data.visible) {
-                    if (data.elements) {
-                        elements = data.elements || [];
-                        if (typeof data.index === "number") {
+                    if (data.elements && Array.isArray(data.elements)) {
+                        elements = data.elements;
+                        if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
                             selectedIndex = data.index;
+                        } else {
+                            selectedIndex = 0;
                         }
+                    } else {
+                        elements = [];
+                        selectedIndex = 0;
                     }
                     
                     if (typeof data.username !== "undefined") {
@@ -1322,6 +1426,11 @@
                         banner.color = data.bannerColor;
                         document.documentElement.style.setProperty('--menu-color', data.bannerColor);
                     }
+                    
+                    // Reset history when opening menu
+                    history = [];
+                    categories = null;
+                    categoryIndex = 0;
                     
                     updateMenu();
                 }
@@ -1352,21 +1461,39 @@
             }
             
             if (data.action === "updateElements") {
-                elements = data.elements || [];
-                if (typeof data.index === "number") {
+                if (data.elements && Array.isArray(data.elements)) {
+                    elements = data.elements;
+                } else {
+                    elements = [];
+                }
+                
+                if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
                     selectedIndex = data.index;
                 } else {
                     selectedIndex = 0;
                 }
                 
-                if (data.categories) {
+                if (data.categories && Array.isArray(data.categories)) {
                     categories = data.categories;
-                    categoryIndex = data.categoryIndex || 0;
+                    categoryIndex = (typeof data.categoryIndex === "number" && data.categoryIndex >= 0 && data.categoryIndex < categories.length) 
+                        ? data.categoryIndex 
+                        : 0;
                 } else {
                     categories = null;
                     categoryIndex = 0;
                 }
                 
+                updateMenu();
+            }
+            
+            // Handle setCurrent action (from DUI menu system)
+            if (data.action === "setCurrent") {
+                if (data.menu && Array.isArray(data.menu)) {
+                    elements = data.menu;
+                }
+                if (typeof data.current === "number" && data.current >= 0 && data.current < elements.length) {
+                    selectedIndex = data.current;
+                }
                 updateMenu();
             }
             
@@ -1459,8 +1586,100 @@
             }, duration);
         }
         
+        // Handle slider and scrollable controls with arrow keys
+        function handleSliderControl(direction) {
+            const selected = elements[selectedIndex];
+            if (!selected) return;
+            
+            if (selected.type === "slider" || selected.type === "slider-checkbox") {
+                const step = selected.step || 1;
+                const min = selected.min || 0;
+                const max = selected.max || 100;
+                let newValue = selected.value || min;
+                
+                if (direction === "left") {
+                    newValue = Math.max(min, newValue - step);
+                } else if (direction === "right") {
+                    newValue = Math.min(max, newValue + step);
+                }
+                
+                selected.value = newValue;
+                updateMenu();
+                
+                sendToLua("menuAction", {
+                    action: "slider",
+                    index: selectedIndex,
+                    label: selected.label,
+                    value: newValue
+                });
+            } else if (selected.type === "scrollable" || selected.type === "scrollable-checkbox") {
+                if (!selected.values || selected.values.length === 0) return;
+                
+                let newIndex = selected.value || 0;
+                if (direction === "left") {
+                    newIndex = Math.max(0, newIndex - 1);
+                } else if (direction === "right") {
+                    newIndex = Math.min(selected.values.length - 1, newIndex + 1);
+                }
+                
+                selected.value = newIndex;
+                updateMenu();
+                
+                sendToLua("menuAction", {
+                    action: "scrollable",
+                    index: selectedIndex,
+                    label: selected.label,
+                    value: newIndex
+                });
+            }
+        }
+        
+        // Enhanced keyboard handler with slider support
+        function enhancedKeyHandler(event) {
+            if (!menuVisible) return;
+            
+            // Skip if typing in input
+            if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                return;
+            }
+            
+            // Handle Left/Right for sliders and categories
+            if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                event.stopPropagation();
+                const selected = elements[selectedIndex];
+                if (selected && (selected.type === "slider" || selected.type === "slider-checkbox" || selected.type === "scrollable" || selected.type === "scrollable-checkbox")) {
+                    handleSliderControl("left");
+                } else if (categories && categories.length > 1) {
+                    categoryIndex = (categoryIndex - 1 + categories.length) % categories.length;
+                    elements = categories[categoryIndex].tabs || [];
+                    selectedIndex = 0;
+                    updateMenu();
+                }
+                return;
+            }
+            
+            if (event.key === "ArrowRight") {
+                event.preventDefault();
+                event.stopPropagation();
+                const selected = elements[selectedIndex];
+                if (selected && (selected.type === "slider" || selected.type === "slider-checkbox" || selected.type === "scrollable" || selected.type === "scrollable-checkbox")) {
+                    handleSliderControl("right");
+                } else if (categories && categories.length > 1) {
+                    categoryIndex = (categoryIndex + 1) % categories.length;
+                    elements = categories[categoryIndex].tabs || [];
+                    selectedIndex = 0;
+                    updateMenu();
+                }
+                return;
+            }
+            
+            // Handle other keys with original handler
+            handleKeyDown(event);
+        }
+        
         // ===================== INITIALIZATION =====================
-        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keydown', enhancedKeyHandler);
         
         // Browser mode for testing
         if (isEnvBrowser()) {
@@ -1477,25 +1696,6 @@
                 showMenu(true);
             }, 100);
         }
-        
-        // NUI Callback registration
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.action === 'menuAction') {
-                fetchNui('menuAction', {
-                    action: 'select',
-                    index: selectedIndex,
-                    value: elements[selectedIndex]?.value
-                });
-            }
-        });
-        
-        // Register close callback
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.action === 'closeMenu') {
-                showMenu(false);
-                fetchNui('closeMenu', {});
-            }
-        });
     </script>
   </body>
 </html>
