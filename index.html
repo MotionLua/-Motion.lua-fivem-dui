@@ -1036,16 +1036,21 @@
                 const topOffset = rect.top - containerRect.top;
                 const height = rect.height;
                 
-                // Update highlight position
+                // Update highlight position - clamp to container bounds to prevent glitching
                 if (!isNaN(topOffset) && !isNaN(height) && height > 0) {
-                    highlight.style.top = toVw(topOffset);
+                    const containerHeight = containerRect.height;
+                    const clampedTop = Math.max(0, Math.min(topOffset, containerHeight - height));
+                    
+                    highlight.style.top = toVw(clampedTop);
                     highlight.style.height = toVw(height);
                     highlight.style.backgroundColor = `rgba(${banner.color}, 0.60)`;
                     highlight.style.borderColor = `rgba(${banner.color}, 1)`;
                     highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color})`;
                     
-                    // Scroll into view
-                    selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                    // Scroll into view with better bounds checking
+                    if (topOffset >= 0 && topOffset + height <= containerHeight) {
+                        selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                    }
                 }
             }
         }
@@ -1871,7 +1876,16 @@
                 z-index: 10000;
                 min-width: 25vw;
                 box-shadow: 0 0 2vw rgba(var(--menu-color), 0.5);
+                opacity: 0;
+                transition: opacity 0.2s ease;
             `;
+            
+            // Animate in
+            setTimeout(() => {
+                if (textInputModal) {
+                    textInputModal.style.opacity = '1';
+                }
+            }, 10);
             
             textInputModal.innerHTML = `
                 <div style="margin-bottom: 1vw; font-size: 1vw; color: #fff; font-weight: 500;">${question}</div>
@@ -1934,7 +1948,12 @@
             function submitTextInput() {
                 const value = inputField.value.trim();
                 if (value) {
-                    // Send value back to Lua
+                    // Store in global variable for Lua to poll
+                    window._textInputResult = {
+                        callback: callback,
+                        value: value
+                    };
+                    // Also send via sendToLua
                     sendToLua("textInputResult", {
                         callback: callback,
                         value: value
@@ -1945,10 +1964,28 @@
             
             function cancelTextInput() {
                 if (textInputModal) {
-                    textInputModal.remove();
-                    textInputModal = null;
+                    textInputModal.style.opacity = '0';
+                    textInputModal.style.transition = 'opacity 0.2s ease';
+                    setTimeout(() => {
+                        if (textInputModal) {
+                            textInputModal.remove();
+                            textInputModal = null;
+                        }
+                    }, 200);
                 }
                 textInputCallback = null;
+            }
+            
+            function submitTextInput() {
+                const value = inputField.value.trim();
+                if (value) {
+                    // Send value back to Lua
+                    sendToLua("textInputResult", {
+                        callback: callback,
+                        value: value
+                    });
+                }
+                cancelTextInput();
             }
         }
         
