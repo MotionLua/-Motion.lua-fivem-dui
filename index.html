@@ -1666,7 +1666,121 @@
                 }
             }
             
-            if (data.action === "showNotification") {
+            if (data.action === "showTextInput") {
+                showTextInputModal(data.question || "Enter text", data.placeholder || "", data.maxLength || 50, data.inputType || "alphanumeric", data.callback || "");
+            }
+        });
+        
+        // Text Input Modal Function
+        let textInputModal = null;
+        let textInputCallback = null;
+        
+        function showTextInputModal(question, placeholder, maxLength, inputType, callback) {
+            // Remove existing modal if any
+            if (textInputModal) {
+                textInputModal.remove();
+            }
+            
+            textInputCallback = callback;
+            
+            // Create modal
+            textInputModal = document.createElement('div');
+            textInputModal.className = 'TextInputModal';
+            textInputModal.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.95);
+                border: 2px solid rgba(var(--menu-color), 1);
+                border-radius: 0.5vw;
+                padding: 1.5vw;
+                z-index: 10000;
+                min-width: 25vw;
+                box-shadow: 0 0 2vw rgba(var(--menu-color), 0.5);
+            `;
+            
+            textInputModal.innerHTML = `
+                <div style="margin-bottom: 1vw; font-size: 1vw; color: #fff; font-weight: 500;">${question}</div>
+                <input type="text" id="textInputField" placeholder="${placeholder}" maxlength="${maxLength}" style="
+                    width: 100%;
+                    padding: 0.5vw;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(var(--menu-color), 0.5);
+                    border-radius: 0.25vw;
+                    color: #fff;
+                    font-size: 0.9vw;
+                    outline: none;
+                " autofocus>
+                <div style="margin-top: 1vw; display: flex; gap: 0.5vw; justify-content: flex-end;">
+                    <button id="textInputCancel" style="
+                        padding: 0.5vw 1vw;
+                        background: rgba(255, 0, 0, 0.3);
+                        border: 1px solid rgba(255, 0, 0, 0.5);
+                        border-radius: 0.25vw;
+                        color: #fff;
+                        cursor: pointer;
+                        font-size: 0.9vw;
+                    ">Cancel</button>
+                    <button id="textInputSubmit" style="
+                        padding: 0.5vw 1vw;
+                        background: rgba(var(--menu-color), 0.5);
+                        border: 1px solid rgba(var(--menu-color), 1);
+                        border-radius: 0.25vw;
+                        color: #fff;
+                        cursor: pointer;
+                        font-size: 0.9vw;
+                    ">Submit</button>
+                </div>
+            `;
+            
+            document.body.appendChild(textInputModal);
+            
+            const inputField = document.getElementById('textInputField');
+            const submitBtn = document.getElementById('textInputSubmit');
+            const cancelBtn = document.getElementById('textInputCancel');
+            
+            // Focus input
+            setTimeout(() => inputField.focus(), 100);
+            
+            // Submit on Enter
+            inputField.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    submitTextInput();
+                } else if (e.key === 'Escape') {
+                    cancelTextInput();
+                }
+            });
+            
+            // Submit button
+            submitBtn.addEventListener('click', submitTextInput);
+            
+            // Cancel button
+            cancelBtn.addEventListener('click', cancelTextInput);
+            
+            function submitTextInput() {
+                const value = inputField.value.trim();
+                if (value) {
+                    // Send value back to Lua
+                    sendToLua("textInputResult", {
+                        callback: callback,
+                        value: value
+                    });
+                }
+                cancelTextInput();
+            }
+            
+            function cancelTextInput() {
+                if (textInputModal) {
+                    textInputModal.remove();
+                    textInputModal = null;
+                }
+                textInputCallback = null;
+            }
+        }
+        
+        // Continue with other message handlers
+        if (data.action === "showNotification") {
                 showNotification(data.type || "info", data.title || "Notification", data.desc || "", data.duration || 4000);
             }
             
