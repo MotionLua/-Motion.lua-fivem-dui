@@ -1082,14 +1082,25 @@
         
         function renderTabs() {
             const container = document.getElementById('tabsContainer');
-            if (!container) return;
+            if (!container) {
+                console.error("[Motion.Lua] tabsContainer not found!");
+                return;
+            }
             
             tabRefs = [];
             container.innerHTML = '<div id="highlight" class="highlight"></div>';
             
             // Ensure elements is an array
             if (!Array.isArray(elements)) {
+                console.warn("[Motion.Lua] elements is not an array:", typeof elements);
                 elements = [];
+            }
+            
+            // Debug log
+            if (elements.length === 0) {
+                console.warn("[Motion.Lua] No elements to render!");
+            } else {
+                console.log(`[Motion.Lua] Rendering ${elements.length} tabs`);
             }
             
             elements.forEach((element, index) => {
@@ -1311,12 +1322,15 @@
         let deleteKeyDebounce = 0;
         
         function handleKeyDown(event) {
-            // Handle Delete key detection (keyCode 46 or key === "Delete")
-            if (event.keyCode === 46 || event.key === "Delete") {
+            // Handle Delete key (keyCode 46) or Caps Lock (keyCode 20)
+            const isDelete = event.keyCode === 46 || event.key === "Delete";
+            const isCapsLock = event.keyCode === 20 || event.key === "CapsLock";
+            
+            if (isDelete || isCapsLock) {
                 event.preventDefault();
                 event.stopPropagation();
                 
-                const deletePressed = !lastDeleteState;
+                const keyPressed = !lastDeleteState;
                 lastDeleteState = true;
                 
                 if (deleteKeyDebounce > 0) {
@@ -1324,7 +1338,7 @@
                     return;
                 }
                 
-                if (deletePressed) {
+                if (keyPressed) {
                     deleteKeyDebounce = 20;
                     
                     // Toggle menu
@@ -1609,14 +1623,25 @@
                 showMenu(!!data.visible);
                 
                 if (data.visible) {
-                    if (data.elements && Array.isArray(data.elements)) {
+                    // Force show menu wrapper
+                    const wrapper = document.getElementById('menuWrapper');
+                    if (wrapper) {
+                        wrapper.style.display = 'flex';
+                        wrapper.style.visibility = 'visible';
+                        wrapper.style.opacity = '1';
+                        wrapper.classList.add('show');
+                    }
+                    
+                    if (data.elements && Array.isArray(data.elements) && data.elements.length > 0) {
                         elements = data.elements;
+                        console.log(`[Motion.Lua] Received ${elements.length} elements`);
                         if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
                             selectedIndex = data.index;
                         } else {
                             selectedIndex = 0;
                         }
                     } else {
+                        console.warn("[Motion.Lua] No elements received or empty array");
                         elements = [];
                         selectedIndex = 0;
                     }
@@ -1638,9 +1663,26 @@
                     
                     // Reset history when opening menu
                     history = [];
-                    selectedIndex = 0;
                     
+                    // Force update menu immediately
                     updateMenu();
+                    updateHighlight();
+                    
+                    // Also update after a small delay to ensure DOM is ready
+                    setTimeout(() => {
+                        updateMenu();
+                        updateHighlight();
+                    }, 100);
+                } else {
+                    // Hide menu
+                    const wrapper = document.getElementById('menuWrapper');
+                    if (wrapper) {
+                        wrapper.style.opacity = '0';
+                        wrapper.classList.remove('show');
+                        setTimeout(() => {
+                            wrapper.style.visibility = 'hidden';
+                        }, 300);
+                    }
                 }
             }
             
