@@ -68,7 +68,7 @@
         
         .PWrapper {
             position: absolute;
-            display: flex;
+            display: flex !important;
             left: 4vw;
             top: 50%;
             transform: translateY(-50%);
@@ -76,21 +76,25 @@
             align-items: center;
             flex-direction: column;
             font-family: Inter;
-            opacity: 0;
+            opacity: 1;
+            visibility: visible;
             transition: opacity 0.3s ease;
         }
         
         .PWrapper.show {
-            opacity: 1;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
         
         .PElements {
             position: relative;
             display: flex;
             justify-content: flex-start;
-            align-items: center;
+            align-items: flex-start;
             flex-direction: row;
             gap: .2604vw;
+            margin-top: 0;
+            padding-top: 0;
         }
         
         .PScroll {
@@ -135,9 +139,11 @@
             position: relative;
             display: flex;
             width: 19.0104vw;
-            justify-content: center;
-            align-items: center;
+            justify-content: flex-start;
+            align-items: flex-start;
             flex-direction: column;
+            margin-top: 0;
+            padding-top: 0;
         }
         
         .PBanner {
@@ -169,6 +175,7 @@
             display: flex;
             width: 100%;
             height: 1.5625vw;
+            margin-top: 0;
             margin-bottom: .2604vw;
             justify-content: center;
             align-items: center;
@@ -879,7 +886,7 @@
         <div id="descBox" class="Desc"></div>
         
         <!-- Main Menu Wrapper -->
-        <div id="menuWrapper" class="PWrapper">
+        <div id="menuWrapper" class="PWrapper show">
             <div class="PBanner">
                 <img id="bannerImage" src="https://cdn.discordapp.com/attachments/1451673035554689054/1461120128992153703/content.png?ex=696965a9&is=69681429&hm=83f9fc10ca6be808a901d36651aff067b1892f3d6335a7b622f1815f474e0c51&" draggable="false" alt="Banner">
             </div>
@@ -1074,6 +1081,11 @@
             
             tabRefs = [];
             container.innerHTML = '<div id="highlight" class="highlight"></div>';
+            
+            // Ensure elements is an array
+            if (!Array.isArray(elements)) {
+                elements = [];
+            }
             
             elements.forEach((element, index) => {
                 const tab = document.createElement('div');
@@ -1271,14 +1283,19 @@
             const wrapper = document.getElementById('menuWrapper');
             if (wrapper) {
                 if (visible) {
+                    wrapper.style.display = 'flex';
+                    wrapper.style.visibility = 'visible';
+                    wrapper.style.opacity = '1';
                     wrapper.classList.add('show');
                 } else {
+                    wrapper.style.opacity = '0';
                     wrapper.classList.remove('show');
                     setTimeout(() => {
+                        wrapper.style.visibility = 'hidden';
                         categoryIndex = 0;
                         categories = null;
                         renderCategories();
-                    }, 250);
+                    }, 300);
                 }
             }
         }
@@ -1553,10 +1570,17 @@
         }
         
         function updateMenu() {
-            renderTabs();
-            renderCategories();
-            renderMetadata();
-            renderDescription();
+            try {
+                if (!Array.isArray(elements)) {
+                    elements = [];
+                }
+                renderTabs();
+                renderCategories();
+                renderMetadata();
+                renderDescription();
+            } catch (error) {
+                console.error("Error updating menu:", error);
+            }
         }
         
         // ===================== MESSAGE HANDLER =====================
@@ -1577,9 +1601,16 @@
             if (!data || typeof data !== "object") return;
             
             if (data.action === "showUI") {
-                showMenu(!!data.visible);
-                
                 if (data.visible) {
+                    // Force show menu immediately
+                    const wrapper = document.getElementById('menuWrapper');
+                    if (wrapper) {
+                        wrapper.style.display = 'flex';
+                        wrapper.style.visibility = 'visible';
+                        wrapper.style.opacity = '1';
+                        wrapper.classList.add('show');
+                    }
+                    showMenu(true);
                     
                     if (data.elements && Array.isArray(data.elements)) {
                         elements = data.elements;
@@ -1976,6 +2007,23 @@
         // ===================== INITIALIZATION =====================
         window.addEventListener('keydown', enhancedKeyHandler);
         
+        // Initialize menu - show it immediately
+        (function init() {
+            const wrapper = document.getElementById('menuWrapper');
+            if (wrapper) {
+                wrapper.style.display = 'flex';
+                wrapper.style.visibility = 'visible';
+                wrapper.style.opacity = '1';
+                wrapper.classList.add('show');
+                menuVisible = true;
+                
+                // Initialize with empty menu
+                elements = [];
+                selectedIndex = 0;
+                updateMenu();
+            }
+        })();
+        
         // Browser mode for testing
         if (isEnvBrowser()) {
             const root = document.getElementById('root');
@@ -1989,22 +2037,9 @@
             // Show menu in browser for testing
             setTimeout(() => {
                 showMenu(true);
-            }, 100);
-        }
-        
-        // Browser mode for testing
-        if (isEnvBrowser()) {
-            const root = document.getElementById('root');
-            if (root) {
-                root.style.backgroundImage = 'url("https://files.catbox.moe/cplsay.png")';
-                root.style.backgroundSize = 'cover';
-                root.style.backgroundRepeat = 'no-repeat';
-                root.style.backgroundPosition = 'center';
-            }
-            
-            // Show menu in browser for testing (only in browser mode)
-            setTimeout(() => {
-                showMenu(true);
+                elements = [];
+                selectedIndex = 0;
+                updateMenu();
             }, 100);
         }
     </script>
