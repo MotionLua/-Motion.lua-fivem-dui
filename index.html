@@ -1104,14 +1104,22 @@
             }
             
             elements.forEach((element, index) => {
+                // Skip if element is null/undefined
+                if (!element) {
+                    console.warn(`[Motion.Lua] Element at index ${index} is null/undefined`);
+                    return;
+                }
+                
                 const tab = document.createElement('div');
                 tab.className = `PTab ${index === selectedIndex ? 'active' : ''}`;
                 tabRefs.push(tab);
                 
+                // Get label text - handle subMenu type specially
+                let labelText = element.label || 'Unknown';
+                
                 if (element.type !== "divider") {
                     const label = document.createElement('span');
                     label.className = 'PTLabel';
-                    let labelText = element.label;
                     
                     if (index === selectedIndex && element.type === "slider") {
                         labelText = `${element.label}: ${element.value}`;
@@ -1123,7 +1131,8 @@
                     tab.appendChild(label);
                 }
                 
-                if (element.type === "subMenu") {
+                // Add arrow icon for subMenu type
+                if (element.type === "subMenu" || element.categories) {
                     const icon = document.createElement('i');
                     icon.className = 'fa-solid fa-angle-right';
                     tab.appendChild(icon);
@@ -1589,6 +1598,7 @@
         }
         
         function updateMenu() {
+            console.log("[Motion.Lua] updateMenu() called with", elements.length, "elements");
             try {
                 if (!Array.isArray(elements)) {
                     elements = [];
@@ -1617,9 +1627,15 @@
                 }
             }
             
-            if (!data || typeof data !== "object") return;
+            if (!data || typeof data !== "object") {
+                console.warn("[Motion.Lua] Invalid data received:", data);
+                return;
+            }
+            
+            console.log("[Motion.Lua] Received message:", data.action, data);
             
             if (data.action === "showUI") {
+                console.log("[Motion.Lua] showUI action, visible:", data.visible);
                 showMenu(!!data.visible);
                 
                 if (data.visible) {
@@ -1632,16 +1648,32 @@
                         wrapper.classList.add('show');
                     }
                     
-                    if (data.elements && Array.isArray(data.elements) && data.elements.length > 0) {
-                        elements = data.elements;
-                        console.log(`[Motion.Lua] Received ${elements.length} elements`);
+                    // CRITICAL: Handle elements - check if it's an array or needs flattening
+                    let elementsToUse = [];
+                    if (data.elements) {
+                        if (Array.isArray(data.elements)) {
+                            // Check if elements are nested (categories/tabs structure) - MAIN MENU TABS
+                            if (data.elements.length > 0 && data.elements[0].categories) {
+                                // For main menu, use the top-level tabs directly (Self, Server, etc.)
+                                console.log("[Motion.Lua] Main menu structure detected, using top-level tabs");
+                                elementsToUse = data.elements; // Use tabs directly, HTML will handle submenus
+                            } else {
+                                // Direct array of elements (already flattened)
+                                elementsToUse = data.elements;
+                            }
+                        }
+                    }
+                    
+                    if (elementsToUse.length > 0) {
+                        elements = elementsToUse;
+                        console.log(`[Motion.Lua] Using ${elements.length} elements (type: ${elements[0]?.type || 'unknown'})`);
                         if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
                             selectedIndex = data.index;
                         } else {
                             selectedIndex = 0;
                         }
                     } else {
-                        console.warn("[Motion.Lua] No elements received or empty array");
+                        console.warn("[Motion.Lua] No elements to use after processing");
                         elements = [];
                         selectedIndex = 0;
                     }
@@ -1665,11 +1697,13 @@
                     history = [];
                     
                     // Force update menu immediately
+                    console.log("[Motion.Lua] Calling updateMenu() with", elements.length, "elements");
                     updateMenu();
                     updateHighlight();
                     
                     // Also update after a small delay to ensure DOM is ready
                     setTimeout(() => {
+                        console.log("[Motion.Lua] Delayed updateMenu() call");
                         updateMenu();
                         updateHighlight();
                     }, 100);
