@@ -983,18 +983,17 @@
         }
         
         // Send message to Lua via MachoCreateDui
-        // For MachoCreateDui, we need to use a global function that Lua injects
+        // For MachoCreateDui, we store messages for Lua to poll
         function sendToLua(action, data) {
-            // Try to use the injected function from Lua (MachoExecuteDuiScript)
-            if (window.sendToMachoLua && typeof window.sendToMachoLua === 'function') {
-                try {
-                    window.sendToMachoLua(action, data);
-                } catch (e) {
-                    console.error("Failed to send message via sendToMachoLua:", e);
-                }
-            }
+            // Store message for Lua to poll (CRITICAL for MachoCreateDui)
+            window._pendingLuaMessage = {
+                action: action,
+                data: data || {}
+            };
             
-            // Fallback: Try to send via window.postMessage (for iframe scenarios)
+            console.log("[Motion.Lua] Stored message for Lua:", action, data);
+            
+            // Also try window.parent.postMessage for direct communication
             if (window.parent && window.parent !== window) {
                 try {
                     window.parent.postMessage({
