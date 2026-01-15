@@ -223,28 +223,33 @@
         
         .PTabs {
             position: relative;
-            display: flex;
+            display: flex !important;
             width: 19.0104vw;
             height: auto;
+            min-height: 1.5625vw;
             max-height: 14.0625vw;
             padding-bottom: .0521vw;
             justify-content: flex-start;
-            align-items: center;
+            align-items: flex-start;
             flex-direction: column;
             background-color: #0009;
             border-radius: .3125vw;
-            overflow-y: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+            visibility: visible;
         }
         
         .PTab {
             position: relative;
-            display: flex;
+            display: flex !important;
             width: 100%;
             height: 1.5625vw;
             min-height: 1.5625vw;
             max-height: 1.5625vw;
             justify-content: center;
             align-items: center;
+            visibility: visible;
+            opacity: 1;
         }
         
         .PTLabel {
@@ -1644,7 +1649,11 @@
                     categories = null;
                     categoryIndex = 0;
                     
-                    updateMenu();
+                    // Force update menu to show tabs immediately
+                    setTimeout(() => {
+                        updateMenu();
+                        updateHighlight();
+                    }, 10);
                 }
             }
             
