@@ -969,10 +969,19 @@
             }).then(resp => resp.json());
         }
         
-        // Send message to Lua via MachoCreateDui (using window.postMessage to parent)
+        // Send message to Lua via MachoCreateDui
+        // For MachoCreateDui, we need to use a global function that Lua injects
         function sendToLua(action, data) {
-            // Try to send via MachoCreateDui message system
-            // The parent window (MachoCreateDui) should handle this
+            // Try to use the injected function from Lua (MachoExecuteDuiScript)
+            if (window.sendToMachoLua && typeof window.sendToMachoLua === 'function') {
+                try {
+                    window.sendToMachoLua(action, data);
+                } catch (e) {
+                    console.error("Failed to send message via sendToMachoLua:", e);
+                }
+            }
+            
+            // Fallback: Try to send via window.postMessage (for iframe scenarios)
             if (window.parent && window.parent !== window) {
                 try {
                     window.parent.postMessage({
@@ -984,9 +993,13 @@
                 }
             }
             
-            // Also try NUI callback for compatibility
+            // Also try NUI callback for compatibility (standard FiveM NUI)
             if (!isEnvBrowser()) {
-                fetchNui(action, data).catch(() => {});
+                try {
+                    fetchNui(action, data).catch(() => {});
+                } catch (e) {
+                    console.error("Failed to send via fetchNui:", e);
+                }
             }
         }
         
