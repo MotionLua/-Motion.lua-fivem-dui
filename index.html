@@ -1618,14 +1618,22 @@
                     showMenu(true);
                     
                     // Handle elements - ensure we have valid array
-                    if (data.elements && Array.isArray(data.elements) && data.elements.length > 0) {
-                        elements = data.elements;
-                        if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
-                            selectedIndex = data.index;
+                    if (data.elements && Array.isArray(data.elements)) {
+                        if (data.elements.length > 0) {
+                            elements = data.elements;
+                            console.log(`Received ${elements.length} elements from Lua`);
+                            if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
+                                selectedIndex = data.index;
+                            } else {
+                                selectedIndex = 0;
+                            }
                         } else {
+                            console.warn("Received empty elements array from Lua");
+                            elements = [];
                             selectedIndex = 0;
                         }
                     } else {
+                        console.error("No elements array received from Lua:", data);
                         // If no elements provided, initialize with empty array
                         elements = [];
                         selectedIndex = 0;
