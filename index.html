@@ -1019,29 +1019,34 @@
         }
         
         // ===================== MENU RENDERING =====================
+        // OPTIMIZATION: Throttle highlight updates to reduce lag
+        let highlightUpdateScheduled = false;
         function updateHighlight() {
-            const highlight = document.getElementById('highlight');
-            if (!highlight || !menuVisible || elements.length === 0) return;
+            if (!menuVisible || elements.length === 0) return;
             
-            const selectedTab = tabRefs[selectedIndex];
-            if (!selectedTab) return;
+            // Throttle updates to reduce lag
+            if (highlightUpdateScheduled) return;
+            highlightUpdateScheduled = true;
             
-            const container = document.getElementById('tabsContainer');
-            if (!container) return;
-            
-            // Wait for DOM to be ready
             requestAnimationFrame(() => {
-                if (!selectedTab.offsetParent) return; // Element not visible
+                highlightUpdateScheduled = false;
+                
+                const highlight = document.getElementById('highlight');
+                if (!highlight) return;
+                
+                const selectedTab = tabRefs[selectedIndex];
+                if (!selectedTab || !selectedTab.offsetParent) return;
+                
+                const container = document.getElementById('tabsContainer');
+                if (!container) return;
                 
                 const rect = selectedTab.getBoundingClientRect();
                 const containerRect = container.getBoundingClientRect();
                 const toVw = (px) => `${(px / window.innerWidth) * 100}vw`;
                 
-                // Calculate position relative to container
                 const topOffset = rect.top - containerRect.top + container.scrollTop;
                 const height = rect.height;
                 
-                // Update highlight position - ensure valid values
                 if (!isNaN(topOffset) && !isNaN(height) && height > 0 && topOffset >= 0) {
                     highlight.style.top = toVw(topOffset);
                     highlight.style.height = toVw(height);
@@ -1049,7 +1054,6 @@
                     highlight.style.opacity = '1';
                     highlight.style.visibility = 'visible';
                     
-                    // Get theme-specific highlight color
                     let highlightColor = banner.color;
                     if (banner.highlightColor) {
                         highlightColor = banner.highlightColor;
@@ -1059,18 +1063,10 @@
                     highlight.style.borderColor = `rgba(${highlightColor}, 1)`;
                     highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
                     
-                    // Scroll into view with proper positioning - use center for better visibility
-                    selectedTab.scrollIntoView({ block: "center", behavior: "smooth" });
-                    
-                    // Re-update highlight after scroll completes
-                    setTimeout(() => {
-                        const newRect = selectedTab.getBoundingClientRect();
-                        const newContainerRect = container.getBoundingClientRect();
-                        const newTopOffset = newRect.top - newContainerRect.top + container.scrollTop;
-                        if (!isNaN(newTopOffset) && newTopOffset >= 0) {
-                            highlight.style.top = toVw(newTopOffset);
-                        }
-                    }, 150);
+                    // OPTIMIZATION: Only scroll if needed (reduced frequency)
+                    if (Math.abs(rect.top - containerRect.top) > containerRect.height / 2) {
+                        selectedTab.scrollIntoView({ block: "center", behavior: "smooth" });
+                    }
                 }
             });
         }
@@ -1398,20 +1394,38 @@
             const allowedKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Backspace", "q", "Q", "e", "E"];
             const isAllowed = allowedKeys.includes(event.key);
             
-            // Block S, Z keys completely
+            // COMPLETELY BLOCK S, Z keys - no exceptions
             const isS = event.keyCode === 83 || event.key === "s" || event.key === "S";
             const isZ = event.keyCode === 90 || event.key === "z" || event.key === "Z";
             if (isS || isZ) {
                 event.preventDefault();
                 event.stopPropagation();
-                return;
+                event.stopImmediatePropagation();
+                return false;
             }
             
-            // Block E key from opening/closing menu (only allow it for scrollables when menu is open)
-            if (!menuVisible && (event.keyCode === 69 || event.key === "e" || event.key === "E")) {
-                event.preventDefault();
-                event.stopPropagation();
-                return;
+            // COMPLETELY BLOCK E key - only allow it for scrollables when menu is open AND on scrollable
+            const isE = event.keyCode === 69 || event.key === "e" || event.key === "E";
+            if (isE) {
+                // Only allow E if menu is open AND we're on a scrollable element
+                if (menuVisible) {
+                    const currentElement = elements[selectedIndex];
+                    if (currentElement && (currentElement.type === "scrollable" || currentElement.type === "scrollable-checkbox")) {
+                        // Allow E for scrollables - continue to switch statement
+                    } else {
+                        // Block E if not on scrollable
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+                        return false;
+                    }
+                } else {
+                    // Block E when menu is closed
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    return false;
+                }
             }
             
             // Block all other keys that aren't allowed when menu is visible
@@ -1554,7 +1568,7 @@
                     event.stopPropagation();
                     const eSelected = elements[selectedIndex];
                     if (eSelected) {
-                        // Handle scrollable (Theme, etc.) with Q/E
+                        // ONLY handle scrollable (Theme, etc.) with E - no category navigation
                         if (eSelected.type === "scrollable" || eSelected.type === "scrollable-checkbox") {
                             if (eSelected.options && eSelected.options.length > 0) {
                                 const currentSelected = eSelected.selected !== undefined ? eSelected.selected : 0;
@@ -1568,13 +1582,7 @@
                                 });
                             }
                         }
-                        // Navigate categories if not on scrollable
-                        else if (categories && categories.length > 1) {
-                            categoryIndex = (categoryIndex + 1) % categories.length;
-                            elements = categories[categoryIndex].tabs || [];
-                            selectedIndex = 0;
-                            updateMenu();
-                        }
+                        // DO NOT navigate categories with E - completely blocked
                     }
                     break;
                 case "ArrowLeft":
@@ -2163,50 +2171,61 @@
         }
         
         // ===================== MOUSE EVENT DISABLING =====================
-        // Disable mouse scroll and click events from toggling menu
+        // COMPLETELY BLOCK ALL MOUSE SCROLL (up, down, left, right)
         document.addEventListener('wheel', (e) => {
-            if (menuVisible) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }, { passive: false, capture: true });
+        
+        // COMPLETELY BLOCK LEFT CLICK on everything
+        document.addEventListener('mousedown', (e) => {
+            // Only allow clicks on input fields and buttons in text input modal
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
+            const isTextInputModal = e.target.closest('.TextInputModal');
+            
+            if (!isInput && !isTextInputModal) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
             }
-        }, { passive: false });
-        
-        // COMPLETELY BLOCK LEFT CLICK on menu items
-        document.addEventListener('mousedown', (e) => {
-            if (menuVisible) {
-                // Only allow clicks on input fields and buttons in text input modal
-                const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
-                const isTextInputModal = e.target.closest('.TextInputModal');
-                
-                if (!isInput && !isTextInputModal) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-            }
-        }, true);
+        }, { capture: true, passive: false });
         
         document.addEventListener('click', (e) => {
-            if (menuVisible) {
-                // Only allow clicks on input fields and buttons in text input modal
-                const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
-                const isTextInputModal = e.target.closest('.TextInputModal');
-                
-                if (!isInput && !isTextInputModal) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
+            // Only allow clicks on input fields and buttons in text input modal
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
+            const isTextInputModal = e.target.closest('.TextInputModal');
+            
+            if (!isInput && !isTextInputModal) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
             }
-        }, true);
+        }, { capture: true, passive: false });
         
-        // Disable context menu
+        // COMPLETELY BLOCK RIGHT CLICK
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
-        });
+            e.stopImmediatePropagation();
+            return false;
+        }, { capture: true, passive: false });
+        
+        // Block mouseup as well
+        document.addEventListener('mouseup', (e) => {
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
+            const isTextInputModal = e.target.closest('.TextInputModal');
+            
+            if (!isInput && !isTextInputModal) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        }, { capture: true, passive: false });
         
         // Disable pointer events on menu tabs when menu is visible (prevents any mouse interaction)
         function disableMenuPointerEvents() {
