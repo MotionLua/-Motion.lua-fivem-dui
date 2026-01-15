@@ -1606,46 +1606,19 @@
             if (!data || typeof data !== "object") return;
             
             if (data.action === "showUI") {
+                showMenu(!!data.visible);
+                
                 if (data.visible) {
-                    // Force show menu immediately
-                    const wrapper = document.getElementById('menuWrapper');
-                    if (wrapper) {
-                        wrapper.style.display = 'flex';
-                        wrapper.style.visibility = 'visible';
-                        wrapper.style.opacity = '1';
-                        wrapper.classList.add('show');
-                    }
-                    showMenu(true);
-                    
-                    // Handle elements - ensure we have valid array
                     if (data.elements && Array.isArray(data.elements)) {
-                        if (data.elements.length > 0) {
-                            elements = data.elements;
-                            console.log(`Received ${elements.length} elements from Lua`);
-                            if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
-                                selectedIndex = data.index;
-                            } else {
-                                selectedIndex = 0;
-                            }
+                        elements = data.elements;
+                        if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
+                            selectedIndex = data.index;
                         } else {
-                            console.warn("Received empty elements array from Lua");
-                            elements = [];
                             selectedIndex = 0;
                         }
                     } else {
-                        console.error("No elements array received from Lua:", data);
-                        // If no elements provided, initialize with empty array
                         elements = [];
                         selectedIndex = 0;
-                    }
-                    
-                    // Handle categories if provided
-                    if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
-                        categories = data.categories;
-                        categoryIndex = data.categoryIndex || 0;
-                    } else {
-                        categories = null;
-                        categoryIndex = 0;
                     }
                     
                     if (typeof data.username !== "undefined") {
@@ -1665,19 +1638,9 @@
                     
                     // Reset history when opening menu
                     history = [];
+                    selectedIndex = 0;
                     
-                    // Force update menu to show tabs immediately - use requestAnimationFrame for better timing
-                    requestAnimationFrame(() => {
-                        updateMenu();
-                        updateHighlight();
-                        // Also try after a small delay to ensure DOM is ready
-                        setTimeout(() => {
-                            updateMenu();
-                            updateHighlight();
-                        }, 50);
-                    });
-                } else {
-                    showMenu(false);
+                    updateMenu();
                 }
             }
             
