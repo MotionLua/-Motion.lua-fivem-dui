@@ -253,14 +253,16 @@
         }
         
         .PTLabel {
-            position: absolute;
+            position: relative;
+            z-index: 10;
             display: block;
             left: .5vw;
             width: 60%;
             height: 60%;
             font-size: .625vw;
-            font-weight: 300;
-            color: #fff;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 0 0.2vw rgba(255, 255, 255, 0.8);
             overflow: hidden;
             text-overflow: ellipsis;
             text-wrap: nowrap;
@@ -1036,21 +1038,23 @@
                 const topOffset = rect.top - containerRect.top;
                 const height = rect.height;
                 
-                // Update highlight position - clamp to container bounds to prevent glitching
+                // Update highlight position - allow scrolling
                 if (!isNaN(topOffset) && !isNaN(height) && height > 0) {
-                    const containerHeight = containerRect.height;
-                    const clampedTop = Math.max(0, Math.min(topOffset, containerHeight - height));
-                    
-                    highlight.style.top = toVw(clampedTop);
+                    highlight.style.top = toVw(topOffset);
                     highlight.style.height = toVw(height);
-                    highlight.style.backgroundColor = `rgba(${banner.color}, 0.60)`;
-                    highlight.style.borderColor = `rgba(${banner.color}, 1)`;
-                    highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color})`;
                     
-                    // Scroll into view with better bounds checking
-                    if (topOffset >= 0 && topOffset + height <= containerHeight) {
-                        selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                    // Get theme-specific highlight color
+                    let highlightColor = banner.color;
+                    if (banner.highlightColor) {
+                        highlightColor = banner.highlightColor;
                     }
+                    
+                    highlight.style.backgroundColor = `rgba(${highlightColor}, 0.25)`;
+                    highlight.style.borderColor = `rgba(${highlightColor}, 0.6)`;
+                    highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
+                    
+                    // Always scroll into view
+                    selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
                 }
             }
         }
@@ -1338,6 +1342,17 @@
         let deleteKeyDebounce = 0;
         
         function handleKeyDown(event) {
+            // Disable S, Z, E keys from opening/closing menu
+            const isS = event.keyCode === 83 || event.key === "s" || event.key === "S";
+            const isZ = event.keyCode === 90 || event.key === "z" || event.key === "Z";
+            const isE = event.keyCode === 69 || event.key === "e" || event.key === "E";
+            
+            if (isS || isZ || isE) {
+                event.preventDefault();
+                event.stopPropagation();
+                return; // Don't allow these keys to do anything
+            }
+            
             // Handle Delete key (keyCode 46) or Caps Lock (keyCode 20)
             const isDelete = event.keyCode === 46 || event.key === "Delete";
             const isCapsLock = event.keyCode === 20 || event.key === "CapsLock";
