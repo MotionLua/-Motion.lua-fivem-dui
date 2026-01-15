@@ -237,6 +237,7 @@
             overflow-y: auto;
             overflow-x: hidden;
             visibility: visible;
+            pointer-events: none; /* FIXED: Completely disable mouse input */
         }
         
         .PTab {
@@ -250,6 +251,7 @@
             align-items: center;
             visibility: visible;
             opacity: 1;
+            pointer-events: none; /* FIXED: Completely disable mouse input */
         }
         
         .PTLabel {
@@ -896,7 +898,7 @@
         <!-- Main Menu Wrapper -->
         <div id="menuWrapper" class="PWrapper show">
             <div class="PBanner">
-                <img id="bannerImage" src="https://cdn.discordapp.com/attachments/1451673035554689054/1461120128992153703/content.png?ex=696965a9&is=69681429&hm=83f9fc10ca6be808a901d36651aff067b1892f3d6335a7b622f1815f474e0c51&" draggable="false" alt="Banner">
+                <img id="bannerImage" src="https://cdn.discordapp.com/attachments/1451673035554689054/1461120128992153703/content.png?ex=696ab729&is=696965a9&hm=0b3eb3b9471d16e26edb11d434596f38f04f8b0e07248936f64b1cfb1388d97b&" draggable="false" alt="Banner">
             </div>
             
             <div class="PElements">
@@ -961,9 +963,18 @@
         let history = [];
         let categories = null;
         let categoryIndex = 0;
+        // Banner images for themes 1-4 (updated with new Discord CDN links)
         let banner = {
-            link: "https://cdn.discordapp.com/attachments/1231103888065695836/1460893359685238784/content.png?ex=69689277&is=696740f7&hm=b893783f1c589de8f9d947a224f210c86344df5333e3dee5469f1b4793f972c7&",
+            link: "https://cdn.discordapp.com/attachments/1451673035554689054/1461120128992153703/content.png?ex=696ab729&is=696965a9&hm=0b3eb3b9471d16e26edb11d434596f38f04f8b0e07248936f64b1cfb1388d97b&", // Theme 1
             color: "168, 25, 56"
+        };
+        
+        // Theme banner links (for theme selector)
+        const themeBanners = {
+            1: "https://cdn.discordapp.com/attachments/1451673035554689054/1461120128992153703/content.png?ex=696ab729&is=696965a9&hm=0b3eb3b9471d16e26edb11d434596f38f04f8b0e07248936f64b1cfb1388d97b&",
+            2: "https://cdn.discordapp.com/attachments/1231103888065695836/1460893359685238784/content.png?ex=696a8cb7&is=69693b37&hm=08d44e7242c97b5359f61cf4282d0c58f8d1c63fafce8c565daeff0e52192b14&",
+            3: "https://cdn.discordapp.com/attachments/1231103888065695836/1460896485293166726/content.png?ex=696a8fa0&is=69693e20&hm=bb31a2ef96917d64cf39e1e7d75e0cb2ffd44496b8ff1202ba2eb9d22daa72c9&",
+            4: "https://cdn.discordapp.com/attachments/1231103888065695836/1460893360104538194/content.png?ex=696a8cb7&is=69693b37&hm=cf05c4f5f8279921c2c489fa59e4b0b21f99af3aac90a4bbb03340a890fdf9d1&"
         };
         let username = "Player";
         let tabRefs = [];
@@ -1019,56 +1030,49 @@
         }
         
         // ===================== MENU RENDERING =====================
-        // OPTIMIZATION: Throttle highlight updates to reduce lag
-        let highlightUpdateScheduled = false;
+        // FIXED: Use index-based positioning instead of DOM measurements to eliminate lag
+        const ITEM_HEIGHT_VW = 1.5625; // Fixed height per item in vw units
+        
         function updateHighlight() {
             if (!menuVisible || elements.length === 0) return;
             
-            // Throttle updates to reduce lag
-            if (highlightUpdateScheduled) return;
-            highlightUpdateScheduled = true;
+            const highlight = document.getElementById('highlight');
+            if (!highlight) return;
             
-            requestAnimationFrame(() => {
-                highlightUpdateScheduled = false;
-                
-                const highlight = document.getElementById('highlight');
-                if (!highlight) return;
-                
-                const selectedTab = tabRefs[selectedIndex];
-                if (!selectedTab || !selectedTab.offsetParent) return;
-                
-                const container = document.getElementById('tabsContainer');
-                if (!container) return;
-                
-                const rect = selectedTab.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
-                const toVw = (px) => `${(px / window.innerWidth) * 100}vw`;
-                
-                const topOffset = rect.top - containerRect.top + container.scrollTop;
-                const height = rect.height;
-                
-                if (!isNaN(topOffset) && !isNaN(height) && height > 0 && topOffset >= 0) {
-                    highlight.style.top = toVw(topOffset);
-                    highlight.style.height = toVw(height);
-                    highlight.style.display = 'block';
-                    highlight.style.opacity = '1';
-                    highlight.style.visibility = 'visible';
-                    
-                    let highlightColor = banner.color;
-                    if (banner.highlightColor) {
-                        highlightColor = banner.highlightColor;
-                    }
-                    
-                    highlight.style.backgroundColor = `rgba(${highlightColor}, 0.60)`;
-                    highlight.style.borderColor = `rgba(${highlightColor}, 1)`;
-                    highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
-                    
-                    // OPTIMIZATION: Only scroll if needed (reduced frequency)
-                    if (Math.abs(rect.top - containerRect.top) > containerRect.height / 2) {
-                        selectedTab.scrollIntoView({ block: "center", behavior: "smooth" });
-                    }
+            // Count non-divider items up to selectedIndex to get actual position
+            let nonDividerIndex = 0;
+            for (let i = 0; i < selectedIndex && i < elements.length; i++) {
+                if (elements[i] && elements[i].type !== "divider") {
+                    nonDividerIndex++;
                 }
-            });
+            }
+            
+            // Calculate position based on index and fixed height - NO DOM MEASUREMENTS
+            const topPosition = nonDividerIndex * ITEM_HEIGHT_VW;
+            
+            highlight.style.top = `${topPosition}vw`;
+            highlight.style.height = `${ITEM_HEIGHT_VW}vw`;
+            highlight.style.display = 'block';
+            highlight.style.opacity = '1';
+            highlight.style.visibility = 'visible';
+            
+            let highlightColor = banner.color;
+            if (banner.highlightColor) {
+                highlightColor = banner.highlightColor;
+            }
+            
+            highlight.style.backgroundColor = `rgba(${highlightColor}, 0.60)`;
+            highlight.style.borderColor = `rgba(${highlightColor}, 1)`;
+            highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
+            
+            // Scroll container to keep highlight visible (only when needed)
+            const container = document.getElementById('tabsContainer');
+            if (container) {
+                const containerHeight = 14.0625; // max-height in vw
+                const visibleItems = Math.floor(containerHeight / ITEM_HEIGHT_VW);
+                const scrollPosition = Math.max(0, nonDividerIndex - Math.floor(visibleItems / 2));
+                container.scrollTop = scrollPosition * ITEM_HEIGHT_VW * (window.innerWidth / 100);
+            }
         }
         
         function updateScrollbar() {
@@ -1260,10 +1264,8 @@
                 container.appendChild(tab);
             });
             
-            // Update highlight after DOM is ready to fix positioning issues
-            requestAnimationFrame(() => {
-                updateHighlight();
-            });
+            // Update highlight immediately - no need for requestAnimationFrame with index-based positioning
+            updateHighlight();
             updateScrollbar();
             updateIndicator();
         }
@@ -1335,13 +1337,9 @@
                     wrapper.style.visibility = 'visible';
                     wrapper.style.opacity = '1';
                     wrapper.classList.add('show');
-                    // Disable pointer events on menu items
-                    disableMenuPointerEvents();
                 } else {
                     wrapper.style.opacity = '0';
                     wrapper.classList.remove('show');
-                    // Re-enable pointer events
-                    enableMenuPointerEvents();
                     setTimeout(() => {
                         wrapper.style.visibility = 'hidden';
                         categoryIndex = 0;
@@ -1568,7 +1566,7 @@
                     event.stopPropagation();
                     const eSelected = elements[selectedIndex];
                     if (eSelected) {
-                        // ONLY handle scrollable (Theme, etc.) with E - no category navigation
+                        // Handle scrollable (Theme, etc.) with E
                         if (eSelected.type === "scrollable" || eSelected.type === "scrollable-checkbox") {
                             if (eSelected.options && eSelected.options.length > 0) {
                                 const currentSelected = eSelected.selected !== undefined ? eSelected.selected : 0;
@@ -1582,7 +1580,17 @@
                                 });
                             }
                         }
-                        // DO NOT navigate categories with E - completely blocked
+                        // Navigate categories (tabs) right with E
+                        else if (categories && categories.length > 1) {
+                            categoryIndex = (categoryIndex + 1) % categories.length;
+                            elements = categories[categoryIndex].tabs || [];
+                            selectedIndex = 0;
+                            updateMenu();
+                            sendToLua("menuAction", {
+                                action: "categoryChange",
+                                categoryIndex: categoryIndex
+                            });
+                        }
                     }
                     break;
                 case "ArrowLeft":
@@ -1678,10 +1686,8 @@
                 renderMetadata();
                 renderDescription();
                 
-                // Update highlight after rendering
-                requestAnimationFrame(() => {
-                    updateHighlight();
-                });
+                // Update highlight immediately - index-based positioning is instant
+                updateHighlight();
             } catch (error) {
                 console.error("Error updating menu:", error);
             }
@@ -2171,7 +2177,8 @@
         }
         
         // ===================== MOUSE EVENT DISABLING =====================
-        // COMPLETELY BLOCK ALL MOUSE SCROLL (up, down, left, right)
+        // FIXED: Completely disable all mouse input - menu is keyboard-only
+        // Block all mouse events globally
         document.addEventListener('wheel', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -2179,7 +2186,6 @@
             return false;
         }, { passive: false, capture: true });
         
-        // COMPLETELY BLOCK LEFT CLICK on everything
         document.addEventListener('mousedown', (e) => {
             // Only allow clicks on input fields and buttons in text input modal
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
@@ -2194,7 +2200,6 @@
         }, { capture: true, passive: false });
         
         document.addEventListener('click', (e) => {
-            // Only allow clicks on input fields and buttons in text input modal
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
             const isTextInputModal = e.target.closest('.TextInputModal');
             
@@ -2206,7 +2211,6 @@
             }
         }, { capture: true, passive: false });
         
-        // COMPLETELY BLOCK RIGHT CLICK
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -2214,7 +2218,6 @@
             return false;
         }, { capture: true, passive: false });
         
-        // Block mouseup as well
         document.addEventListener('mouseup', (e) => {
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
             const isTextInputModal = e.target.closest('.TextInputModal');
@@ -2227,29 +2230,13 @@
             }
         }, { capture: true, passive: false });
         
-        // Disable pointer events on menu tabs when menu is visible (prevents any mouse interaction)
-        function disableMenuPointerEvents() {
-            const tabsContainer = document.getElementById('tabsContainer');
-            if (tabsContainer && menuVisible) {
-                const tabs = tabsContainer.querySelectorAll('.PTab');
-                tabs.forEach(tab => {
-                    tab.style.pointerEvents = 'none';
-                    tab.style.cursor = 'none';
-                });
-            }
-        }
+        // Block mousemove to prevent hover effects
+        document.addEventListener('mousemove', (e) => {
+            e.stopPropagation();
+        }, { capture: true, passive: false });
         
-        // Re-enable pointer events when menu is hidden
-        function enableMenuPointerEvents() {
-            const tabsContainer = document.getElementById('tabsContainer');
-            if (tabsContainer) {
-                const tabs = tabsContainer.querySelectorAll('.PTab');
-                tabs.forEach(tab => {
-                    tab.style.pointerEvents = '';
-                    tab.style.cursor = '';
-                });
-            }
-        }
+        // Remove hover-based selection - selection ONLY changes via keyboard
+        // No need for disableMenuPointerEvents/enableMenuPointerEvents - CSS handles it
         
         // ===================== INITIALIZATION =====================
         window.addEventListener('keydown', enhancedKeyHandler);
