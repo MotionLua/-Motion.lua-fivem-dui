@@ -25,14 +25,20 @@
         }
         
         body {
-            background: none !important;
+            background: transparent !important;
             margin: 0;
+            padding: 0;
             font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             height: 100vh;
+            width: 100vw;
             user-select: none;
             overflow: hidden !important;
+        }
+        
+        html {
+            background: transparent !important;
         }
         
         #root {
@@ -1257,13 +1263,19 @@
             if (wrapper) {
                 if (visible) {
                     wrapper.classList.add('show');
+                    // Ensure menu is visible
+                    wrapper.style.opacity = '1';
+                    wrapper.style.visibility = 'visible';
+                    wrapper.style.display = 'flex';
                 } else {
                     wrapper.classList.remove('show');
+                    wrapper.style.opacity = '0';
                     setTimeout(() => {
+                        wrapper.style.visibility = 'hidden';
                         categoryIndex = 0;
                         categories = null;
                         renderCategories();
-                    }, 250);
+                    }, 300);
                 }
             }
         }
@@ -1562,9 +1574,10 @@
             if (!data || typeof data !== "object") return;
             
             if (data.action === "showUI") {
-                showMenu(!!data.visible);
-                
+                // Always show menu when showUI is received with visible=true
                 if (data.visible) {
+                    showMenu(true);
+                    
                     if (data.elements && Array.isArray(data.elements)) {
                         elements = data.elements;
                         if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
@@ -1598,6 +1611,8 @@
                     categoryIndex = 0;
                     
                     updateMenu();
+                } else {
+                    showMenu(false);
                 }
             }
             
