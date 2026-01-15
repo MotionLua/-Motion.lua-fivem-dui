@@ -26,14 +26,12 @@
         }
         
         body {
-            background: transparent !important;
+            background: none !important;
             margin: 0;
-            padding: 0;
             font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             height: 100vh;
-            width: 100vw;
             user-select: none;
             overflow: hidden !important;
         }
@@ -41,7 +39,6 @@
         #root {
             height: 100%;
             width: 100%;
-            background: transparent !important;
         }
         
         .Desc {
@@ -80,14 +77,11 @@
             flex-direction: column;
             font-family: Inter;
             opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            z-index: 1000;
+            transition: opacity 0.3s ease;
         }
         
         .PWrapper.show {
-            opacity: 1 !important;
-            visibility: visible !important;
+            opacity: 1;
         }
         
         .PElements {
@@ -1016,18 +1010,29 @@
             if (!highlight || !menuVisible || elements.length === 0) return;
             
             const selectedTab = tabRefs[selectedIndex];
-            if (selectedTab) {
+            if (selectedTab && selectedTab.offsetParent !== null) {
+                const container = document.getElementById('tabsContainer');
+                if (!container) return;
+                
                 const rect = selectedTab.getBoundingClientRect();
-                const containerRect = document.getElementById('tabsContainer').getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
                 const toVw = (px) => `${(px / window.innerWidth) * 100}vw`;
                 
-                highlight.style.top = toVw(rect.top - containerRect.top);
-                highlight.style.height = toVw(rect.height);
-                highlight.style.backgroundColor = `rgba(${banner.color}, 0.60)`;
-                highlight.style.borderColor = `rgba(${banner.color}, 1)`;
-                highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color})`;
+                // Calculate position relative to container - ensure accurate positioning
+                const topOffset = rect.top - containerRect.top;
+                const height = rect.height;
                 
-                selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                // Only update if values are valid
+                if (!isNaN(topOffset) && !isNaN(height) && height > 0) {
+                    highlight.style.top = toVw(topOffset);
+                    highlight.style.height = toVw(height);
+                    highlight.style.backgroundColor = `rgba(${banner.color}, 0.60)`;
+                    highlight.style.borderColor = `rgba(${banner.color}, 1)`;
+                    highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color})`;
+                    
+                    // Scroll into view
+                    selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                }
             }
         }
         
@@ -1195,7 +1200,10 @@
                 container.appendChild(tab);
             });
             
-            updateHighlight();
+            // Update highlight after DOM is ready to fix positioning issues
+            requestAnimationFrame(() => {
+                updateHighlight();
+            });
             updateScrollbar();
             updateIndicator();
         }
@@ -1263,17 +1271,14 @@
             const wrapper = document.getElementById('menuWrapper');
             if (wrapper) {
                 if (visible) {
-                    wrapper.style.display = 'flex';
-                    wrapper.style.visibility = 'visible';
                     wrapper.classList.add('show');
                 } else {
                     wrapper.classList.remove('show');
                     setTimeout(() => {
-                        wrapper.style.visibility = 'hidden';
                         categoryIndex = 0;
                         categories = null;
                         renderCategories();
-                    }, 300);
+                    }, 250);
                 }
             }
         }
@@ -1572,17 +1577,9 @@
             if (!data || typeof data !== "object") return;
             
             if (data.action === "showUI") {
-                // Always show menu when showUI is received with visible=true
+                showMenu(!!data.visible);
+                
                 if (data.visible) {
-                    // Force show immediately
-                    const wrapper = document.getElementById('menuWrapper');
-                    if (wrapper) {
-                        wrapper.style.display = 'flex';
-                        wrapper.style.visibility = 'visible';
-                        wrapper.style.opacity = '1';
-                    }
-                    
-                    showMenu(true);
                     
                     if (data.elements && Array.isArray(data.elements)) {
                         elements = data.elements;
@@ -1617,8 +1614,6 @@
                     categoryIndex = 0;
                     
                     updateMenu();
-                } else {
-                    showMenu(false);
                 }
             }
             
@@ -1981,28 +1976,21 @@
         // ===================== INITIALIZATION =====================
         window.addEventListener('keydown', enhancedKeyHandler);
         
-        // Initialize menu wrapper - ensure it's ready and visible
-        (function init() {
-            const wrapper = document.getElementById('menuWrapper');
-            if (wrapper) {
-                wrapper.style.display = 'flex';
-                
-                // In DUI mode, show menu immediately as fallback
-                if (!isEnvBrowser()) {
-                    // Show menu right away - don't wait for Lua message
-                    setTimeout(() => {
-                        wrapper.style.opacity = '1';
-                        wrapper.style.visibility = 'visible';
-                        wrapper.classList.add('show');
-                        menuVisible = true;
-                        // Initialize with empty menu
-                        elements = [];
-                        selectedIndex = 0;
-                        updateMenu();
-                    }, 500);
-                }
+        // Browser mode for testing
+        if (isEnvBrowser()) {
+            const root = document.getElementById('root');
+            if (root) {
+                root.style.backgroundImage = 'url("https://files.catbox.moe/cplsay.png")';
+                root.style.backgroundSize = 'cover';
+                root.style.backgroundRepeat = 'no-repeat';
+                root.style.backgroundPosition = 'center';
             }
-        })();
+            
+            // Show menu in browser for testing
+            setTimeout(() => {
+                showMenu(true);
+            }, 100);
+        }
         
         // Browser mode for testing
         if (isEnvBrowser()) {
