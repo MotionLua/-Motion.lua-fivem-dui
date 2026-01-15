@@ -1018,32 +1018,63 @@
         // ===================== MENU RENDERING =====================
         function updateHighlight() {
             const highlight = document.getElementById('highlight');
-            if (!highlight || !menuVisible || elements.length === 0) return;
+            if (!highlight) {
+                console.warn("[Motion.Lua] highlight element not found!");
+                return;
+            }
+            
+            if (!menuVisible || elements.length === 0) {
+                highlight.style.display = 'none';
+                return;
+            }
+            
+            highlight.style.display = 'block';
+            
+            if (selectedIndex < 0 || selectedIndex >= tabRefs.length) {
+                console.warn("[Motion.Lua] Invalid selectedIndex:", selectedIndex, "tabRefs.length:", tabRefs.length);
+                return;
+            }
             
             const selectedTab = tabRefs[selectedIndex];
-            if (selectedTab && selectedTab.offsetParent !== null) {
-                const container = document.getElementById('tabsContainer');
-                if (!container) return;
+            if (!selectedTab) {
+                console.warn("[Motion.Lua] selectedTab not found at index:", selectedIndex);
+                return;
+            }
+            
+            if (selectedTab.offsetParent === null) {
+                console.warn("[Motion.Lua] selectedTab is not visible");
+                return;
+            }
+            
+            const container = document.getElementById('tabsContainer');
+            if (!container) {
+                console.warn("[Motion.Lua] tabsContainer not found");
+                return;
+            }
+            
+            const rect = selectedTab.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            const toVw = (px) => `${(px / window.innerWidth) * 100}vw`;
+            
+            // Calculate position relative to container - ensure accurate positioning
+            const topOffset = rect.top - containerRect.top;
+            const height = rect.height;
+            
+            // Only update if values are valid
+            if (!isNaN(topOffset) && !isNaN(height) && height > 0) {
+                highlight.style.top = toVw(topOffset);
+                highlight.style.height = toVw(height);
+                highlight.style.backgroundColor = `rgba(${banner.color}, 0.60)`;
+                highlight.style.borderColor = `rgba(${banner.color}, 1)`;
+                highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color})`;
+                highlight.style.display = 'block';
+                highlight.style.opacity = '1';
+                highlight.style.visibility = 'visible';
                 
-                const rect = selectedTab.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
-                const toVw = (px) => `${(px / window.innerWidth) * 100}vw`;
-                
-                // Calculate position relative to container - ensure accurate positioning
-                const topOffset = rect.top - containerRect.top;
-                const height = rect.height;
-                
-                // Only update if values are valid
-                if (!isNaN(topOffset) && !isNaN(height) && height > 0) {
-                    highlight.style.top = toVw(topOffset);
-                    highlight.style.height = toVw(height);
-                    highlight.style.backgroundColor = `rgba(${banner.color}, 0.60)`;
-                    highlight.style.borderColor = `rgba(${banner.color}, 1)`;
-                    highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color})`;
-                    
-                    // Scroll into view
-                    selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
-                }
+                // Scroll into view
+                selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            } else {
+                console.warn("[Motion.Lua] Invalid highlight position:", topOffset, height);
             }
         }
         
@@ -1606,6 +1637,14 @@
                 renderCategories();
                 renderMetadata();
                 renderDescription();
+                
+                // CRITICAL: Update highlight after rendering
+                requestAnimationFrame(() => {
+                    updateHighlight();
+                });
+                setTimeout(() => {
+                    updateHighlight();
+                }, 50);
             } catch (error) {
                 console.error("Error updating menu:", error);
             }
@@ -1744,6 +1783,7 @@
             }
             
             if (data.action === "updateElements") {
+                console.log("[Motion.Lua] updateElements received:", data);
                 if (data.elements && Array.isArray(data.elements)) {
                     elements = data.elements;
                 } else {
@@ -1766,7 +1806,16 @@
                     categoryIndex = 0;
                 }
                 
+                console.log("[Motion.Lua] updateElements - selectedIndex:", selectedIndex, "elements:", elements.length);
                 updateMenu();
+                
+                // Force highlight update immediately and after delay
+                requestAnimationFrame(() => {
+                    updateHighlight();
+                });
+                setTimeout(() => {
+                    updateHighlight();
+                }, 50);
             }
             
             // Handle setCurrent action (from DUI menu system)
