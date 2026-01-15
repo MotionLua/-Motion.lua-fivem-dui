@@ -1617,7 +1617,8 @@
                     }
                     showMenu(true);
                     
-                    if (data.elements && Array.isArray(data.elements)) {
+                    // Handle elements - ensure we have valid array
+                    if (data.elements && Array.isArray(data.elements) && data.elements.length > 0) {
                         elements = data.elements;
                         if (typeof data.index === "number" && data.index >= 0 && data.index < elements.length) {
                             selectedIndex = data.index;
@@ -1625,8 +1626,18 @@
                             selectedIndex = 0;
                         }
                     } else {
+                        // If no elements provided, initialize with empty array
                         elements = [];
                         selectedIndex = 0;
+                    }
+                    
+                    // Handle categories if provided
+                    if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
+                        categories = data.categories;
+                        categoryIndex = data.categoryIndex || 0;
+                    } else {
+                        categories = null;
+                        categoryIndex = 0;
                     }
                     
                     if (typeof data.username !== "undefined") {
@@ -1646,14 +1657,19 @@
                     
                     // Reset history when opening menu
                     history = [];
-                    categories = null;
-                    categoryIndex = 0;
                     
-                    // Force update menu to show tabs immediately
-                    setTimeout(() => {
+                    // Force update menu to show tabs immediately - use requestAnimationFrame for better timing
+                    requestAnimationFrame(() => {
                         updateMenu();
                         updateHighlight();
-                    }, 10);
+                        // Also try after a small delay to ensure DOM is ready
+                        setTimeout(() => {
+                            updateMenu();
+                            updateHighlight();
+                        }, 50);
+                    });
+                } else {
+                    showMenu(false);
                 }
             }
             
