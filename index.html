@@ -253,16 +253,14 @@
         }
         
         .PTLabel {
-            position: relative;
-            z-index: 10;
+            position: absolute;
             display: block;
             left: .5vw;
             width: 60%;
             height: 60%;
             font-size: .625vw;
-            font-weight: 700;
-            color: #ffffff;
-            text-shadow: 0 0 0.2vw rgba(255, 255, 255, 0.8);
+            font-weight: 300;
+            color: #fff;
             overflow: hidden;
             text-overflow: ellipsis;
             text-wrap: nowrap;
@@ -1049,12 +1047,22 @@
                         highlightColor = banner.highlightColor;
                     }
                     
-                    highlight.style.backgroundColor = `rgba(${highlightColor}, 0.25)`;
-                    highlight.style.borderColor = `rgba(${highlightColor}, 0.6)`;
+                    highlight.style.backgroundColor = `rgba(${highlightColor}, 0.60)`;
+                    highlight.style.borderColor = `rgba(${highlightColor}, 1)`;
                     highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
                     
-                    // Always scroll into view
-                    selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                    // Scroll into view with proper positioning
+                    requestAnimationFrame(() => {
+                        selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                        // Re-update highlight after scroll to ensure correct position
+                        setTimeout(() => {
+                            const newRect = selectedTab.getBoundingClientRect();
+                            const newTopOffset = newRect.top - containerRect.top;
+                            if (!isNaN(newTopOffset) && newTopOffset >= 0) {
+                                highlight.style.top = toVw(newTopOffset);
+                            }
+                        }, 100);
+                    });
                 }
             }
         }
@@ -1989,18 +1997,6 @@
                     }, 200);
                 }
                 textInputCallback = null;
-            }
-            
-            function submitTextInput() {
-                const value = inputField.value.trim();
-                if (value) {
-                    // Send value back to Lua
-                    sendToLua("textInputResult", {
-                        callback: callback,
-                        value: value
-                    });
-                }
-                cancelTextInput();
             }
         }
         
