@@ -1024,22 +1024,30 @@
             if (!highlight || !menuVisible || elements.length === 0) return;
             
             const selectedTab = tabRefs[selectedIndex];
-            if (selectedTab && selectedTab.offsetParent !== null) {
-                const container = document.getElementById('tabsContainer');
-                if (!container) return;
+            if (!selectedTab) return;
+            
+            const container = document.getElementById('tabsContainer');
+            if (!container) return;
+            
+            // Wait for DOM to be ready
+            requestAnimationFrame(() => {
+                if (!selectedTab.offsetParent) return; // Element not visible
                 
                 const rect = selectedTab.getBoundingClientRect();
                 const containerRect = container.getBoundingClientRect();
                 const toVw = (px) => `${(px / window.innerWidth) * 100}vw`;
                 
                 // Calculate position relative to container
-                const topOffset = rect.top - containerRect.top;
+                const topOffset = rect.top - containerRect.top + container.scrollTop;
                 const height = rect.height;
                 
-                // Update highlight position - allow scrolling
-                if (!isNaN(topOffset) && !isNaN(height) && height > 0) {
+                // Update highlight position - ensure valid values
+                if (!isNaN(topOffset) && !isNaN(height) && height > 0 && topOffset >= 0) {
                     highlight.style.top = toVw(topOffset);
                     highlight.style.height = toVw(height);
+                    highlight.style.display = 'block';
+                    highlight.style.opacity = '1';
+                    highlight.style.visibility = 'visible';
                     
                     // Get theme-specific highlight color
                     let highlightColor = banner.color;
@@ -1051,20 +1059,20 @@
                     highlight.style.borderColor = `rgba(${highlightColor}, 1)`;
                     highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
                     
-                    // Scroll into view with proper positioning
-                    requestAnimationFrame(() => {
-                        selectedTab.scrollIntoView({ block: "nearest", behavior: "smooth" });
-                        // Re-update highlight after scroll to ensure correct position
-                        setTimeout(() => {
-                            const newRect = selectedTab.getBoundingClientRect();
-                            const newTopOffset = newRect.top - containerRect.top;
-                            if (!isNaN(newTopOffset) && newTopOffset >= 0) {
-                                highlight.style.top = toVw(newTopOffset);
-                            }
-                        }, 100);
-                    });
+                    // Scroll into view with proper positioning - use center for better visibility
+                    selectedTab.scrollIntoView({ block: "center", behavior: "smooth" });
+                    
+                    // Re-update highlight after scroll completes
+                    setTimeout(() => {
+                        const newRect = selectedTab.getBoundingClientRect();
+                        const newContainerRect = container.getBoundingClientRect();
+                        const newTopOffset = newRect.top - newContainerRect.top + container.scrollTop;
+                        if (!isNaN(newTopOffset) && newTopOffset >= 0) {
+                            highlight.style.top = toVw(newTopOffset);
+                        }
+                    }, 150);
                 }
-            }
+            });
         }
         
         function updateScrollbar() {
@@ -1331,9 +1339,13 @@
                     wrapper.style.visibility = 'visible';
                     wrapper.style.opacity = '1';
                     wrapper.classList.add('show');
+                    // Disable pointer events on menu items
+                    disableMenuPointerEvents();
                 } else {
                     wrapper.style.opacity = '0';
                     wrapper.classList.remove('show');
+                    // Re-enable pointer events
+                    enableMenuPointerEvents();
                     setTimeout(() => {
                         wrapper.style.visibility = 'hidden';
                         categoryIndex = 0;
@@ -1350,18 +1362,7 @@
         let deleteKeyDebounce = 0;
         
         function handleKeyDown(event) {
-            // Disable S, Z, E keys from opening/closing menu
-            const isS = event.keyCode === 83 || event.key === "s" || event.key === "S";
-            const isZ = event.keyCode === 90 || event.key === "z" || event.key === "Z";
-            const isE = event.keyCode === 69 || event.key === "e" || event.key === "E";
-            
-            if (isS || isZ || isE) {
-                event.preventDefault();
-                event.stopPropagation();
-                return; // Don't allow these keys to do anything
-            }
-            
-            // Handle Delete key (keyCode 46) or Caps Lock (keyCode 20)
+            // Handle Delete key (keyCode 46) or Caps Lock (keyCode 20) - ALLOW TOGGLE
             const isDelete = event.keyCode === 46 || event.key === "Delete";
             const isCapsLock = event.keyCode === 20 || event.key === "CapsLock";
             
@@ -1385,13 +1386,39 @@
                         showMenu(false);
                         sendToLua("closeMenu", {});
                     } else {
-                        // Menu opening is handled by Lua, but we can request it
                         sendToLua("openMenu", {});
                     }
                 }
                 return;
             } else {
                 lastDeleteState = false;
+            }
+            
+            // ALLOWED KEYS ONLY: ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Enter, Backspace, Q, E
+            const allowedKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Backspace", "q", "Q", "e", "E"];
+            const isAllowed = allowedKeys.includes(event.key);
+            
+            // Block S, Z keys completely
+            const isS = event.keyCode === 83 || event.key === "s" || event.key === "S";
+            const isZ = event.keyCode === 90 || event.key === "z" || event.key === "Z";
+            if (isS || isZ) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+            
+            // Block E key from opening/closing menu (only allow it for scrollables when menu is open)
+            if (!menuVisible && (event.keyCode === 69 || event.key === "e" || event.key === "E")) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+            
+            // Block all other keys that aren't allowed when menu is visible
+            if (!isAllowed && menuVisible) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
             }
             
             if (!menuVisible) return;
@@ -1458,14 +1485,20 @@
                                 label: selected.label
                             });
                         } else if (selected.type === "checkbox") {
-                            // Toggle checkbox
-                            selected.checked = !selected.checked;
+                            // Toggle checkbox - CRITICAL: Update state immediately
+                            const wasChecked = selected.checked || false;
+                            selected.checked = !wasChecked;
+                            
+                            // Update UI immediately
                             updateMenu();
+                            
+                            // Send to Lua with proper action format
                             sendToLua("menuAction", {
-                                action: "checkbox",
+                                action: "select",
                                 index: selectedIndex,
                                 label: selected.label,
-                                checked: selected.checked
+                                checked: selected.checked,
+                                type: "checkbox"
                             });
                         }
                     }
@@ -2127,6 +2160,76 @@
             
             // Handle other keys with original handler
             handleKeyDown(event);
+        }
+        
+        // ===================== MOUSE EVENT DISABLING =====================
+        // Disable mouse scroll and click events from toggling menu
+        document.addEventListener('wheel', (e) => {
+            if (menuVisible) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { passive: false });
+        
+        // COMPLETELY BLOCK LEFT CLICK on menu items
+        document.addEventListener('mousedown', (e) => {
+            if (menuVisible) {
+                // Only allow clicks on input fields and buttons in text input modal
+                const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
+                const isTextInputModal = e.target.closest('.TextInputModal');
+                
+                if (!isInput && !isTextInputModal) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }
+        }, true);
+        
+        document.addEventListener('click', (e) => {
+            if (menuVisible) {
+                // Only allow clicks on input fields and buttons in text input modal
+                const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
+                const isTextInputModal = e.target.closest('.TextInputModal');
+                
+                if (!isInput && !isTextInputModal) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }
+        }, true);
+        
+        // Disable context menu
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        // Disable pointer events on menu tabs when menu is visible (prevents any mouse interaction)
+        function disableMenuPointerEvents() {
+            const tabsContainer = document.getElementById('tabsContainer');
+            if (tabsContainer && menuVisible) {
+                const tabs = tabsContainer.querySelectorAll('.PTab');
+                tabs.forEach(tab => {
+                    tab.style.pointerEvents = 'none';
+                    tab.style.cursor = 'none';
+                });
+            }
+        }
+        
+        // Re-enable pointer events when menu is hidden
+        function enableMenuPointerEvents() {
+            const tabsContainer = document.getElementById('tabsContainer');
+            if (tabsContainer) {
+                const tabs = tabsContainer.querySelectorAll('.PTab');
+                tabs.forEach(tab => {
+                    tab.style.pointerEvents = '';
+                    tab.style.cursor = '';
+                });
+            }
         }
         
         // ===================== INITIALIZATION =====================
