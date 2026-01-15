@@ -1801,6 +1801,40 @@
             if (data.action === "showTextInput") {
                 showTextInputModal(data.question || "Enter text", data.placeholder || "", data.maxLength || 50, data.inputType || "alphanumeric", data.callback || "");
             }
+            
+            if (data.action === "showNotification") {
+                showNotification(data.type || "info", data.title || "Notification", data.desc || "", data.duration || 4000);
+            }
+            
+            if (data.action === "displayBinds") {
+                const container = document.getElementById('keybindsContainer');
+                if (container) {
+                    if (data.visible) {
+                        container.classList.add('show');
+                    } else {
+                        container.classList.remove('show');
+                    }
+                }
+                
+                if (data.binds) {
+                    const list = document.getElementById('keybindsList');
+                    if (list) {
+                        list.innerHTML = data.binds.map(bind => `
+                            <div class="Keybind">
+                                <div class="Label">${bind.label}</div>
+                                <div class="Elements">
+                                    <span>${(bind.type === "checkbox" || bind.type === "slider-checkbox") ? `(${bind.keyLabel})` : bind.keyLabel}</span>
+                                    ${(bind.type === "checkbox" || bind.type === "slider-checkbox") ? `
+                                        <span style="color: ${bind.checked ? 'white' : 'rgba(255, 255, 255, 0.50)'}">
+                                            ${bind.checked ? 'On' : 'Off'}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            }
         });
         
         // Text Input Modal Function
@@ -1910,42 +1944,6 @@
                 textInputCallback = null;
             }
         }
-        
-        // Continue with other message handlers
-        if (data.action === "showNotification") {
-                showNotification(data.type || "info", data.title || "Notification", data.desc || "", data.duration || 4000);
-            }
-            
-            if (data.action === "displayBinds") {
-                const container = document.getElementById('keybindsContainer');
-                if (container) {
-                    if (data.visible) {
-                        container.classList.add('show');
-                    } else {
-                        container.classList.remove('show');
-                    }
-                }
-                
-                if (data.binds) {
-                    const list = document.getElementById('keybindsList');
-                    if (list) {
-                        list.innerHTML = data.binds.map(bind => `
-                            <div class="Keybind">
-                                <div class="Label">${bind.label}</div>
-                                <div class="Elements">
-                                    <span>${(bind.type === "checkbox" || bind.type === "slider-checkbox") ? `(${bind.keyLabel})` : bind.keyLabel}</span>
-                                    ${(bind.type === "checkbox" || bind.type === "slider-checkbox") ? `
-                                        <span style="color: ${bind.checked ? 'white' : 'rgba(255, 255, 255, 0.50)'}">
-                                            ${bind.checked ? 'On' : 'Off'}
-                                        </span>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                }
-            }
-        });
         
         // ===================== NOTIFICATIONS =====================
         function showNotification(type, title, desc, duration) {
