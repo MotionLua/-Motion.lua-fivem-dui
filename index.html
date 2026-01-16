@@ -20,6 +20,21 @@
             box-sizing: border-box;
         }
         
+        /* STRICTLY KEYBOARD-ONLY MENU - NO MOUSE NAVIGATION */
+        *:not(.TextInputModal):not(.TextInputModal *) {
+            pointer-events: none !important;
+            cursor: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+        
+        /* ONLY allow mouse on text input modal */
+        .TextInputModal,
+        .TextInputModal * {
+            pointer-events: auto !important;
+            cursor: auto !important;
+        }
+        
         html {
             color-scheme: normal !important;
             background: transparent !important;
@@ -32,13 +47,17 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             height: 100vh;
-            user-select: none;
+            user-select: none !important;
             overflow: hidden !important;
+            pointer-events: none !important; /* STRICTLY KEYBOARD-ONLY - NO MOUSE */
+            cursor: none !important;
         }
         
         #root {
             height: 100%;
             width: 100%;
+            pointer-events: none !important; /* STRICTLY KEYBOARD-ONLY - NO MOUSE */
+            cursor: none !important;
         }
         
         .Desc {
@@ -79,6 +98,8 @@
             opacity: 1;
             visibility: visible;
             transition: opacity 0.3s ease;
+            pointer-events: none !important; /* STRICTLY KEYBOARD-ONLY - NO MOUSE */
+            cursor: none !important;
         }
         
         .PWrapper.show {
@@ -237,8 +258,10 @@
             overflow-y: auto;
             overflow-x: hidden;
             visibility: visible;
-            pointer-events: none; /* FIXED: Completely disable mouse input */
+            pointer-events: none !important; /* FIXED: Completely disable mouse input */
             scroll-behavior: auto; /* Remove smooth scrolling for instant updates */
+            user-select: none !important;
+            -webkit-user-select: none !important;
         }
         
         .PTab {
@@ -252,7 +275,10 @@
             align-items: center;
             visibility: visible;
             opacity: 1;
-            pointer-events: none; /* FIXED: Completely disable mouse input */
+            pointer-events: none !important; /* FIXED: Completely disable mouse input */
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            cursor: none !important;
         }
         
         .PTLabel {
@@ -867,12 +893,13 @@
             border-radius: .3083vw;
             box-shadow: 0vw 0vw .2083vw .0339vw rgb(var(--menu-color));
             z-index: 1;
-            transition: none; /* REMOVED TRANSITIONS FOR INSTANT UPDATES */
+            transition: none !important; /* REMOVED TRANSITIONS FOR INSTANT UPDATES */
             pointer-events: none;
             display: block;
             opacity: 1;
             visibility: visible;
             will-change: top; /* Optimize for position changes */
+            transform: translateZ(0); /* Force hardware acceleration */
         }
         
         .vehicle-icon {
@@ -1039,7 +1066,10 @@
         function updateHighlight() {
             if (!menuVisible || elements.length === 0 || selectedIndex < 0 || selectedIndex >= elements.length) {
                 const highlight = document.getElementById('highlight');
-                if (highlight) highlight.style.display = 'none';
+                if (highlight) {
+                    highlight.style.display = 'none';
+                    highlight.style.transition = 'none';
+                }
                 return;
             }
             
@@ -1049,18 +1079,17 @@
             // Calculate position directly from selectedIndex - INSTANT, NO DELAYS
             const topPosition = selectedIndex * ITEM_HEIGHT_VW;
             
-            // Apply ALL styles in one operation for maximum performance
-            highlight.style.cssText = `
-                top: ${topPosition}vw;
-                height: ${ITEM_HEIGHT_VW}vw;
-                display: block;
-                opacity: 1;
-                visibility: visible;
-                background-color: rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 0.60);
-                border-color: rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 1);
-                box-shadow: 0vw 0vw .2083vw .0339vw rgb(${banner.color || banner.highlightColor || '168, 25, 56'});
-                transition: none;
-            `;
+            // Apply ALL styles DIRECTLY - no requestAnimationFrame for zero delay
+            highlight.style.top = `${topPosition}vw`;
+            highlight.style.height = `${ITEM_HEIGHT_VW}vw`;
+            highlight.style.display = 'block';
+            highlight.style.opacity = '1';
+            highlight.style.visibility = 'visible';
+            highlight.style.transition = 'none';
+            highlight.style.transform = 'translateZ(0)';
+            highlight.style.backgroundColor = `rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 0.60)`;
+            highlight.style.borderColor = `rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 1)`;
+            highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color || banner.highlightColor || '168, 25, 56'})`;
             
             // Scroll container instantly - no smooth scrolling
             const container = document.getElementById('tabsContainer');
@@ -1069,6 +1098,7 @@
                 const visibleItems = Math.floor(containerHeight / ITEM_HEIGHT_VW);
                 const scrollPosition = Math.max(0, selectedIndex - Math.floor(visibleItems / 2));
                 const scrollTopPx = scrollPosition * ITEM_HEIGHT_PX;
+                container.style.scrollBehavior = 'auto'; // Ensure no smooth scrolling
                 container.scrollTop = scrollTopPx; // Instant scroll, no smooth behavior
             }
         }
@@ -1526,10 +1556,22 @@
                 case "q":
                     event.preventDefault();
                     event.stopPropagation();
-                    const qSelected = elements[selectedIndex];
-                    if (qSelected) {
-                        // Handle scrollable (Theme, etc.) with Q/E
-                        if (qSelected.type === "scrollable" || qSelected.type === "scrollable-checkbox") {
+                    // Q key: Navigate tabs left (like old version)
+                    // First check if we have categories to navigate
+                    if (categories && categories.length > 1) {
+                        categoryIndex = (categoryIndex - 1 + categories.length) % categories.length;
+                        elements = categories[categoryIndex].tabs || [];
+                        selectedIndex = 0;
+                        updateMenu();
+                        sendToLua("menuAction", {
+                            action: "categoryChange",
+                            categoryIndex: categoryIndex
+                        });
+                    }
+                    // If no categories, handle scrollable if on one
+                    else {
+                        const qSelected = elements[selectedIndex];
+                        if (qSelected && (qSelected.type === "scrollable" || qSelected.type === "scrollable-checkbox")) {
                             if (qSelected.options && qSelected.options.length > 0) {
                                 const currentSelected = qSelected.selected !== undefined ? qSelected.selected : 0;
                                 qSelected.selected = Math.max(0, currentSelected - 1);
@@ -1542,22 +1584,27 @@
                                 });
                             }
                         }
-                        // Navigate categories if not on scrollable
-                        else if (categories && categories.length > 1) {
-                            categoryIndex = (categoryIndex - 1 + categories.length) % categories.length;
-                            elements = categories[categoryIndex].tabs || [];
-                            selectedIndex = 0;
-                            updateMenu();
-                        }
                     }
                     break;
                 case "e":
                     event.preventDefault();
                     event.stopPropagation();
-                    const eSelected = elements[selectedIndex];
-                    if (eSelected) {
-                        // Handle scrollable (Theme, etc.) with E
-                        if (eSelected.type === "scrollable" || eSelected.type === "scrollable-checkbox") {
+                    // E key: Navigate tabs right (like old version, matching Q behavior)
+                    // First check if we have categories to navigate
+                    if (categories && categories.length > 1) {
+                        categoryIndex = (categoryIndex + 1) % categories.length;
+                        elements = categories[categoryIndex].tabs || [];
+                        selectedIndex = 0;
+                        updateMenu();
+                        sendToLua("menuAction", {
+                            action: "categoryChange",
+                            categoryIndex: categoryIndex
+                        });
+                    }
+                    // If no categories, handle scrollable if on one
+                    else {
+                        const eSelected = elements[selectedIndex];
+                        if (eSelected && (eSelected.type === "scrollable" || eSelected.type === "scrollable-checkbox")) {
                             if (eSelected.options && eSelected.options.length > 0) {
                                 const currentSelected = eSelected.selected !== undefined ? eSelected.selected : 0;
                                 eSelected.selected = Math.min(eSelected.options.length - 1, currentSelected + 1);
@@ -1569,17 +1616,6 @@
                                     value: eSelected.value
                                 });
                             }
-                        }
-                        // Navigate categories (tabs) right with E
-                        else if (categories && categories.length > 1) {
-                            categoryIndex = (categoryIndex + 1) % categories.length;
-                            elements = categories[categoryIndex].tabs || [];
-                            selectedIndex = 0;
-                            updateMenu();
-                            sendToLua("menuAction", {
-                                action: "categoryChange",
-                                categoryIndex: categoryIndex
-                            });
                         }
                     }
                     break;
@@ -1942,6 +1978,8 @@
                 box-shadow: 0 0 2vw rgba(var(--menu-color), 0.5);
                 opacity: 0;
                 transition: opacity 0.2s ease;
+                pointer-events: auto !important;
+                cursor: auto !important;
             `;
             
             // Animate in
@@ -2171,8 +2209,10 @@
         }
         
         // ===================== MOUSE EVENT DISABLING =====================
-        // FIXED: COMPLETELY BLOCK ALL MOUSE INPUT - NO EXCEPTIONS
-        // Block mouse wheel (scroll up/down)
+        // STRICTLY KEYBOARD-ONLY MENU - ALL MOUSE INPUT COMPLETELY REMOVED
+        // Block ALL mouse events - no exceptions for menu navigation
+        
+        // Block mouse wheel completely
         document.addEventListener('wheel', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -2181,7 +2221,7 @@
             return false;
         }, { passive: false, capture: true });
         
-        // Block mouse movement (left/right movement)
+        // Block ALL mouse movement - no navigation via mouse
         document.addEventListener('mousemove', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -2190,12 +2230,14 @@
             return false;
         }, { passive: false, capture: true });
         
-        // Block left click
+        // Block ALL mouse clicks - menu is keyboard-only
         document.addEventListener('mousedown', (e) => {
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
+            // ONLY allow clicks on text input modal (for text input functionality)
             const isTextInputModal = e.target.closest('.TextInputModal');
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
             
-            if (!isInput && !isTextInputModal) {
+            // Block everything except text input modal
+            if (!isTextInputModal || !isInput) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -2205,10 +2247,12 @@
         }, { passive: false, capture: true });
         
         document.addEventListener('click', (e) => {
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
+            // ONLY allow clicks on text input modal (for text input functionality)
             const isTextInputModal = e.target.closest('.TextInputModal');
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
             
-            if (!isInput && !isTextInputModal) {
+            // Block everything except text input modal
+            if (!isTextInputModal || !isInput) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -2217,7 +2261,7 @@
             }
         }, { passive: false, capture: true });
         
-        // Block right click
+        // Block ALL right clicks
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -2227,10 +2271,12 @@
         }, { passive: false, capture: true });
         
         document.addEventListener('mouseup', (e) => {
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
+            // ONLY allow clicks on text input modal (for text input functionality)
             const isTextInputModal = e.target.closest('.TextInputModal');
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
             
-            if (!isInput && !isTextInputModal) {
+            // Block everything except text input modal
+            if (!isTextInputModal || !isInput) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -2239,28 +2285,46 @@
             }
         }, { passive: false, capture: true });
         
-        // Block mouseenter/mouseleave to prevent hover effects
+        // Block ALL hover events - no hover-based navigation
         document.addEventListener('mouseenter', (e) => {
+            e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
+            e.cancelBubble = true;
+            return false;
         }, { capture: true, passive: false });
         
         document.addEventListener('mouseleave', (e) => {
+            e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
+            e.cancelBubble = true;
+            return false;
         }, { capture: true, passive: false });
         
-        // Block mouseover/mouseout
+        // Block ALL mouseover/mouseout - no hover effects
         document.addEventListener('mouseover', (e) => {
+            e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
+            e.cancelBubble = true;
+            return false;
         }, { capture: true, passive: false });
         
         document.addEventListener('mouseout', (e) => {
+            e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
+            e.cancelBubble = true;
+            return false;
         }, { capture: true, passive: false });
         
-        // Disable cursor completely
+        // Disable cursor completely - no mouse cursor
         document.body.style.cursor = 'none';
+        document.body.style.pointerEvents = 'none';
         
-        // Remove hover-based selection - selection ONLY changes via keyboard
+        // Make entire menu keyboard-only - selection ONLY changes via keyboard
+        // No mouse interaction with menu elements whatsoever
         
         // ===================== INITIALIZATION =====================
         window.addEventListener('keydown', enhancedKeyHandler);
