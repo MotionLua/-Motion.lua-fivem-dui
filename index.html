@@ -1030,26 +1030,20 @@
         }
         
         // ===================== MENU RENDERING =====================
-        // FIXED: Use index-based positioning instead of DOM measurements to eliminate lag
+        // FIXED: Fast index-based positioning that follows selectedIndex exactly
         const ITEM_HEIGHT_VW = 1.5625; // Fixed height per item in vw units
         
         function updateHighlight() {
-            if (!menuVisible || elements.length === 0) return;
+            if (!menuVisible || elements.length === 0 || selectedIndex < 0 || selectedIndex >= elements.length) return;
             
             const highlight = document.getElementById('highlight');
             if (!highlight) return;
             
-            // Count non-divider items up to selectedIndex to get actual position
-            let nonDividerIndex = 0;
-            for (let i = 0; i < selectedIndex && i < elements.length; i++) {
-                if (elements[i] && elements[i].type !== "divider") {
-                    nonDividerIndex++;
-                }
-            }
+            // Calculate position directly from selectedIndex - each element takes ITEM_HEIGHT_VW space
+            // This ensures highlight always matches the selected item exactly, even during fast scrolling
+            const topPosition = selectedIndex * ITEM_HEIGHT_VW;
             
-            // Calculate position based on index and fixed height - NO DOM MEASUREMENTS
-            const topPosition = nonDividerIndex * ITEM_HEIGHT_VW;
-            
+            // Apply position immediately - no delays, no DOM measurements
             highlight.style.top = `${topPosition}vw`;
             highlight.style.height = `${ITEM_HEIGHT_VW}vw`;
             highlight.style.display = 'block';
@@ -1065,13 +1059,15 @@
             highlight.style.borderColor = `rgba(${highlightColor}, 1)`;
             highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
             
-            // Scroll container to keep highlight visible (only when needed)
+            // Scroll container to keep highlight visible - calculate from selectedIndex
             const container = document.getElementById('tabsContainer');
             if (container) {
                 const containerHeight = 14.0625; // max-height in vw
                 const visibleItems = Math.floor(containerHeight / ITEM_HEIGHT_VW);
-                const scrollPosition = Math.max(0, nonDividerIndex - Math.floor(visibleItems / 2));
-                container.scrollTop = scrollPosition * ITEM_HEIGHT_VW * (window.innerWidth / 100);
+                const scrollPosition = Math.max(0, selectedIndex - Math.floor(visibleItems / 2));
+                // Convert vw to pixels for scrollTop
+                const scrollTopPx = scrollPosition * ITEM_HEIGHT_VW * (window.innerWidth / 100);
+                container.scrollTop = scrollTopPx;
             }
         }
         
@@ -1392,7 +1388,7 @@
             const allowedKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Backspace", "q", "Q", "e", "E"];
             const isAllowed = allowedKeys.includes(event.key);
             
-            // COMPLETELY BLOCK S, Z keys - no exceptions
+            // COMPLETELY BLOCK S, Z keys - no exceptions (CRITICAL: S key was closing menu)
             const isS = event.keyCode === 83 || event.key === "s" || event.key === "S";
             const isZ = event.keyCode === 90 || event.key === "z" || event.key === "Z";
             if (isS || isZ) {
@@ -1401,6 +1397,9 @@
                 event.stopImmediatePropagation();
                 return false;
             }
+            
+            // DELETE key is handled at the top of function - don't block it here
+            // Lua handles menu toggle via RegisterKeyMapping
             
             // COMPLETELY BLOCK E key - only allow it for scrollables when menu is open AND on scrollable
             const isE = event.keyCode === 69 || event.key === "e" || event.key === "E";
@@ -1447,10 +1446,15 @@
                     if (elements.length > 0) {
                         // Skip dividers
                         let newIndex = selectedIndex;
+                        let attempts = 0;
                         do {
                             newIndex = (newIndex - 1 + elements.length) % elements.length;
+                            attempts++;
+                            if (attempts > elements.length) break; // Prevent infinite loop
                         } while (elements[newIndex] && elements[newIndex].type === "divider" && newIndex !== selectedIndex);
                         selectedIndex = newIndex;
+                        // Update highlight immediately for instant response
+                        updateHighlight();
                         updateMenu();
                     }
                     break;
@@ -1460,10 +1464,15 @@
                     if (elements.length > 0) {
                         // Skip dividers
                         let newIndex = selectedIndex;
+                        let attempts = 0;
                         do {
                             newIndex = (newIndex + 1) % elements.length;
+                            attempts++;
+                            if (attempts > elements.length) break; // Prevent infinite loop
                         } while (elements[newIndex] && elements[newIndex].type === "divider" && newIndex !== selectedIndex);
                         selectedIndex = newIndex;
+                        // Update highlight immediately for instant response
+                        updateHighlight();
                         updateMenu();
                     }
                     break;
@@ -1681,12 +1690,16 @@
                 if (!Array.isArray(elements)) {
                     elements = [];
                 }
+                
+                // Update highlight FIRST before rendering to ensure it's always correct
+                updateHighlight();
+                
                 renderTabs();
                 renderCategories();
                 renderMetadata();
                 renderDescription();
                 
-                // Update highlight immediately - index-based positioning is instant
+                // Update highlight again after rendering to ensure it's positioned correctly
                 updateHighlight();
             } catch (error) {
                 console.error("Error updating menu:", error);
