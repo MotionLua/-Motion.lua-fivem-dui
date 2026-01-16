@@ -238,6 +238,7 @@
             overflow-x: hidden;
             visibility: visible;
             pointer-events: none; /* FIXED: Completely disable mouse input */
+            scroll-behavior: auto; /* Remove smooth scrolling for instant updates */
         }
         
         .PTab {
@@ -866,11 +867,12 @@
             border-radius: .3083vw;
             box-shadow: 0vw 0vw .2083vw .0339vw rgb(var(--menu-color));
             z-index: 1;
-            transition: top 200ms ease, height 120ms ease, background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+            transition: none; /* REMOVED TRANSITIONS FOR INSTANT UPDATES */
             pointer-events: none;
             display: block;
             opacity: 1;
             visibility: visible;
+            will-change: top; /* Optimize for position changes */
         }
         
         .vehicle-icon {
@@ -1030,44 +1032,44 @@
         }
         
         // ===================== MENU RENDERING =====================
-        // FIXED: Fast index-based positioning that follows selectedIndex exactly
+        // OPTIMIZED: Instant highlight with zero delays - uses direct style manipulation
         const ITEM_HEIGHT_VW = 1.5625; // Fixed height per item in vw units
+        const ITEM_HEIGHT_PX = ITEM_HEIGHT_VW * (window.innerWidth / 100); // Pre-calculate in pixels
         
         function updateHighlight() {
-            if (!menuVisible || elements.length === 0 || selectedIndex < 0 || selectedIndex >= elements.length) return;
+            if (!menuVisible || elements.length === 0 || selectedIndex < 0 || selectedIndex >= elements.length) {
+                const highlight = document.getElementById('highlight');
+                if (highlight) highlight.style.display = 'none';
+                return;
+            }
             
             const highlight = document.getElementById('highlight');
             if (!highlight) return;
             
-            // Calculate position directly from selectedIndex - each element takes ITEM_HEIGHT_VW space
-            // This ensures highlight always matches the selected item exactly, even during fast scrolling
+            // Calculate position directly from selectedIndex - INSTANT, NO DELAYS
             const topPosition = selectedIndex * ITEM_HEIGHT_VW;
             
-            // Apply position immediately - no delays, no DOM measurements
-            highlight.style.top = `${topPosition}vw`;
-            highlight.style.height = `${ITEM_HEIGHT_VW}vw`;
-            highlight.style.display = 'block';
-            highlight.style.opacity = '1';
-            highlight.style.visibility = 'visible';
+            // Apply ALL styles in one operation for maximum performance
+            highlight.style.cssText = `
+                top: ${topPosition}vw;
+                height: ${ITEM_HEIGHT_VW}vw;
+                display: block;
+                opacity: 1;
+                visibility: visible;
+                background-color: rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 0.60);
+                border-color: rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 1);
+                box-shadow: 0vw 0vw .2083vw .0339vw rgb(${banner.color || banner.highlightColor || '168, 25, 56'});
+                transition: none;
+            `;
             
-            let highlightColor = banner.color;
-            if (banner.highlightColor) {
-                highlightColor = banner.highlightColor;
-            }
-            
-            highlight.style.backgroundColor = `rgba(${highlightColor}, 0.60)`;
-            highlight.style.borderColor = `rgba(${highlightColor}, 1)`;
-            highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
-            
-            // Scroll container to keep highlight visible - calculate from selectedIndex
+            // Scroll container instantly - no smooth scrolling
             const container = document.getElementById('tabsContainer');
             if (container) {
                 const containerHeight = 14.0625; // max-height in vw
                 const visibleItems = Math.floor(containerHeight / ITEM_HEIGHT_VW);
                 const scrollPosition = Math.max(0, selectedIndex - Math.floor(visibleItems / 2));
-                // Convert vw to pixels for scrollTop
-                const scrollTopPx = scrollPosition * ITEM_HEIGHT_VW * (window.innerWidth / 100);
-                container.scrollTop = scrollTopPx;
+                const scrollTopPx = scrollPosition * ITEM_HEIGHT_PX;
+                container.scrollTop = scrollTopPx; // Instant scroll, no smooth behavior
             }
         }
         
@@ -1347,41 +1349,16 @@
         }
         
         // ===================== KEYBOARD NAVIGATION =====================
-        // Delete key detection state
-        let lastDeleteState = false;
-        let deleteKeyDebounce = 0;
-        
         function handleKeyDown(event) {
-            // Handle Delete key (keyCode 46) or Caps Lock (keyCode 20) - ALLOW TOGGLE
+            // DELETE key is handled COMPLETELY by Lua - don't interfere here
+            // Lua uses RegisterKeyMapping + IsControlJustPressed fallback
             const isDelete = event.keyCode === 46 || event.key === "Delete";
             const isCapsLock = event.keyCode === 20 || event.key === "CapsLock";
             
+            // Let DELETE/CapsLock pass through to Lua - don't block it
             if (isDelete || isCapsLock) {
-                event.preventDefault();
-                event.stopPropagation();
-                
-                const keyPressed = !lastDeleteState;
-                lastDeleteState = true;
-                
-                if (deleteKeyDebounce > 0) {
-                    deleteKeyDebounce--;
-                    return;
-                }
-                
-                if (keyPressed) {
-                    deleteKeyDebounce = 20;
-                    
-                    // Toggle menu
-                    if (menuVisible) {
-                        showMenu(false);
-                        sendToLua("closeMenu", {});
-                    } else {
-                        sendToLua("openMenu", {});
-                    }
-                }
+                // Don't prevent default - let Lua handle it
                 return;
-            } else {
-                lastDeleteState = false;
             }
             
             // ALLOWED KEYS ONLY: ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Enter, Backspace, Q, E
@@ -1444,17 +1421,19 @@
                     event.preventDefault();
                     event.stopPropagation();
                     if (elements.length > 0) {
-                        // Skip dividers
+                        // Skip dividers - optimized loop
                         let newIndex = selectedIndex;
                         let attempts = 0;
+                        const maxAttempts = elements.length;
                         do {
                             newIndex = (newIndex - 1 + elements.length) % elements.length;
                             attempts++;
-                            if (attempts > elements.length) break; // Prevent infinite loop
-                        } while (elements[newIndex] && elements[newIndex].type === "divider" && newIndex !== selectedIndex);
+                        } while (attempts < maxAttempts && elements[newIndex] && elements[newIndex].type === "divider" && newIndex !== selectedIndex);
+                        
                         selectedIndex = newIndex;
-                        // Update highlight immediately for instant response
+                        // Update highlight INSTANTLY before anything else
                         updateHighlight();
+                        // Then update menu (highlight already done, so no lag)
                         updateMenu();
                     }
                     break;
@@ -1462,17 +1441,19 @@
                     event.preventDefault();
                     event.stopPropagation();
                     if (elements.length > 0) {
-                        // Skip dividers
+                        // Skip dividers - optimized loop
                         let newIndex = selectedIndex;
                         let attempts = 0;
+                        const maxAttempts = elements.length;
                         do {
                             newIndex = (newIndex + 1) % elements.length;
                             attempts++;
-                            if (attempts > elements.length) break; // Prevent infinite loop
-                        } while (elements[newIndex] && elements[newIndex].type === "divider" && newIndex !== selectedIndex);
+                        } while (attempts < maxAttempts && elements[newIndex] && elements[newIndex].type === "divider" && newIndex !== selectedIndex);
+                        
                         selectedIndex = newIndex;
-                        // Update highlight immediately for instant response
+                        // Update highlight INSTANTLY before anything else
                         updateHighlight();
+                        // Then update menu (highlight already done, so no lag)
                         updateMenu();
                     }
                     break;
@@ -1691,16 +1672,16 @@
                     elements = [];
                 }
                 
-                // Update highlight FIRST before rendering to ensure it's always correct
+                // Update highlight FIRST - instant response
                 updateHighlight();
                 
+                // Render everything else
                 renderTabs();
                 renderCategories();
                 renderMetadata();
                 renderDescription();
                 
-                // Update highlight again after rendering to ensure it's positioned correctly
-                updateHighlight();
+                // Highlight already updated, no need to update again
             } catch (error) {
                 console.error("Error updating menu:", error);
             }
@@ -2190,17 +2171,27 @@
         }
         
         // ===================== MOUSE EVENT DISABLING =====================
-        // FIXED: Completely disable all mouse input - menu is keyboard-only
-        // Block all mouse events globally
+        // FIXED: COMPLETELY BLOCK ALL MOUSE INPUT - NO EXCEPTIONS
+        // Block mouse wheel (scroll up/down)
         document.addEventListener('wheel', (e) => {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
+            e.cancelBubble = true;
             return false;
         }, { passive: false, capture: true });
         
+        // Block mouse movement (left/right movement)
+        document.addEventListener('mousemove', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            e.cancelBubble = true;
+            return false;
+        }, { passive: false, capture: true });
+        
+        // Block left click
         document.addEventListener('mousedown', (e) => {
-            // Only allow clicks on input fields and buttons in text input modal
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
             const isTextInputModal = e.target.closest('.TextInputModal');
             
@@ -2208,9 +2199,10 @@
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
+                e.cancelBubble = true;
                 return false;
             }
-        }, { capture: true, passive: false });
+        }, { passive: false, capture: true });
         
         document.addEventListener('click', (e) => {
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
@@ -2220,16 +2212,19 @@
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
+                e.cancelBubble = true;
                 return false;
             }
-        }, { capture: true, passive: false });
+        }, { passive: false, capture: true });
         
+        // Block right click
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
+            e.cancelBubble = true;
             return false;
-        }, { capture: true, passive: false });
+        }, { passive: false, capture: true });
         
         document.addEventListener('mouseup', (e) => {
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
@@ -2239,17 +2234,33 @@
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
+                e.cancelBubble = true;
                 return false;
             }
-        }, { capture: true, passive: false });
+        }, { passive: false, capture: true });
         
-        // Block mousemove to prevent hover effects
-        document.addEventListener('mousemove', (e) => {
+        // Block mouseenter/mouseleave to prevent hover effects
+        document.addEventListener('mouseenter', (e) => {
             e.stopPropagation();
         }, { capture: true, passive: false });
         
+        document.addEventListener('mouseleave', (e) => {
+            e.stopPropagation();
+        }, { capture: true, passive: false });
+        
+        // Block mouseover/mouseout
+        document.addEventListener('mouseover', (e) => {
+            e.stopPropagation();
+        }, { capture: true, passive: false });
+        
+        document.addEventListener('mouseout', (e) => {
+            e.stopPropagation();
+        }, { capture: true, passive: false });
+        
+        // Disable cursor completely
+        document.body.style.cursor = 'none';
+        
         // Remove hover-based selection - selection ONLY changes via keyboard
-        // No need for disableMenuPointerEvents/enableMenuPointerEvents - CSS handles it
         
         // ===================== INITIALIZATION =====================
         window.addEventListener('keydown', enhancedKeyHandler);
