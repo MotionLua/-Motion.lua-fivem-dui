@@ -1516,6 +1516,25 @@
                                 index: selectedIndex,
                                 label: selected.label
                             });
+                        } else if (selected.type === "slider" || selected.type === "slider-checkbox") {
+                            // Commit slider value ONLY on Enter
+                            sendToLua("menuAction", {
+                                action: "select",
+                                index: selectedIndex,
+                                label: selected.label,
+                                type: "slider",
+                                value: selected.value
+                            });
+                        } else if (selected.type === "scrollable" || selected.type === "scrollable-checkbox") {
+                            // Commit scrollable selection ONLY on Enter
+                            const v = (selected.value !== undefined) ? selected.value : (selected.selected !== undefined ? (selected.selected + 1) : 1);
+                            sendToLua("menuAction", {
+                                action: "select",
+                                index: selectedIndex,
+                                label: selected.label,
+                                type: "scrollable",
+                                value: v
+                            });
                         } else if (selected.type === "checkbox") {
                             // Toggle checkbox - CRITICAL: Update state immediately
                             const wasChecked = selected.checked || false;
@@ -1577,11 +1596,6 @@
                                 qSelected.selected = Math.max(0, currentSelected - 1);
                                 qSelected.value = qSelected.selected + 1; // 1-based for compatibility
                                 updateMenu();
-                                sendToLua("menuAction", {
-                                    action: "scrollable",
-                                    index: selectedIndex,
-                                    value: qSelected.value
-                                });
                             }
                         }
                     }
@@ -1610,11 +1624,6 @@
                                 eSelected.selected = Math.min(eSelected.options.length - 1, currentSelected + 1);
                                 eSelected.value = eSelected.selected + 1; // 1-based for compatibility
                                 updateMenu();
-                                sendToLua("menuAction", {
-                                    action: "scrollable",
-                                    index: selectedIndex,
-                                    value: eSelected.value
-                                });
                             }
                         }
                     }
@@ -1630,11 +1639,6 @@
                             const min = leftSelected.min || 0;
                             leftSelected.value = Math.max(min, (leftSelected.value || min) - step);
                             updateMenu();
-                            sendToLua("menuAction", {
-                                action: "slider",
-                                index: selectedIndex,
-                                value: leftSelected.value
-                            });
                         }
                         // Handle scrollable
                         else if (leftSelected.type === "scrollable" || leftSelected.type === "scrollable-checkbox") {
@@ -1643,11 +1647,6 @@
                                 leftSelected.selected = Math.max(0, currentSelected - 1);
                                 leftSelected.value = leftSelected.selected + 1; // 1-based for compatibility
                                 updateMenu();
-                                sendToLua("menuAction", {
-                                    action: "scrollable",
-                                    index: selectedIndex,
-                                    value: leftSelected.value
-                                });
                             }
                         }
                         // Navigate categories
@@ -1670,11 +1669,6 @@
                             const max = rightSelected.max || 100;
                             rightSelected.value = Math.min(max, (rightSelected.value || 0) + step);
                             updateMenu();
-                            sendToLua("menuAction", {
-                                action: "slider",
-                                index: selectedIndex,
-                                value: rightSelected.value
-                            });
                         }
                         // Handle scrollable
                         else if (rightSelected.type === "scrollable" || rightSelected.type === "scrollable-checkbox") {
@@ -1683,11 +1677,6 @@
                                 rightSelected.selected = Math.min(rightSelected.options.length - 1, currentSelected + 1);
                                 rightSelected.value = rightSelected.selected + 1; // 1-based for compatibility
                                 updateMenu();
-                                sendToLua("menuAction", {
-                                    action: "scrollable",
-                                    index: selectedIndex,
-                                    value: rightSelected.value
-                                });
                             }
                         }
                         // Navigate categories
@@ -2142,13 +2131,6 @@
                 
                 selected.value = newValue;
                 updateMenu();
-                
-                sendToLua("menuAction", {
-                    action: "slider",
-                    index: selectedIndex,
-                    label: selected.label,
-                    value: newValue
-                });
             } else if (selected.type === "scrollable" || selected.type === "scrollable-checkbox") {
                 if (!selected.values || selected.values.length === 0) return;
                 
@@ -2161,13 +2143,6 @@
                 
                 selected.value = newIndex;
                 updateMenu();
-                
-                sendToLua("menuAction", {
-                    action: "scrollable",
-                    index: selectedIndex,
-                    label: selected.label,
-                    value: newIndex
-                });
             }
         }
         
