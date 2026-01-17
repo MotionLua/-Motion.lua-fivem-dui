@@ -153,7 +153,7 @@
             margin-top: .1302vw;
             background-color: rgb(var(--menu-color));
             box-shadow: 0 0 .1042vw .0521vw rgba(var(--menu-color), 1);
-            transition: top .25s ease, height .25s ease;
+            transition: none !important; /* REMOVED TRANSITIONS FOR INSTANT UPDATES */
         }
         
         .PRightElements {
@@ -259,7 +259,7 @@
             overflow-x: hidden;
             visibility: visible;
             pointer-events: none !important; /* FIXED: Completely disable mouse input */
-            scroll-behavior: auto; /* Remove smooth scrolling for instant updates */
+            scroll-behavior: auto !important; /* Remove smooth scrolling for instant updates */
             user-select: none !important;
             -webkit-user-select: none !important;
         }
@@ -335,7 +335,7 @@
             height: .4167vw;
             background-color: #fff;
             border-radius: .2604vw;
-            transition: .25s all;
+            transition: none !important; /* REMOVED TRANSITIONS FOR INSTANT UPDATES */
         }
         
         .Slider {
@@ -607,7 +607,7 @@
             display: flex;
             width: 100%;
             bottom: 0vw;
-            transition: .25s height;
+            transition: none !important; /* REMOVED TRANSITIONS FOR INSTANT UPDATES */
         }
         
         .PFooter {
@@ -1098,8 +1098,11 @@
                 const visibleItems = Math.floor(containerHeight / ITEM_HEIGHT_VW);
                 const scrollPosition = Math.max(0, selectedIndex - Math.floor(visibleItems / 2));
                 const scrollTopPx = scrollPosition * ITEM_HEIGHT_PX;
-                container.style.scrollBehavior = 'auto'; // Ensure no smooth scrolling
-                container.scrollTop = scrollTopPx; // Instant scroll, no smooth behavior
+                // Force instant scroll - disable any smooth behavior
+                container.style.scrollBehavior = 'auto';
+                container.style.transition = 'none';
+                // Use scrollTo with instant behavior for maximum compatibility
+                container.scrollTo({ top: scrollTopPx, behavior: 'auto' });
             }
         }
         
@@ -1218,7 +1221,7 @@
                         : element.value;
                     options.innerHTML = `
                         <div class="Slider">
-                            <div class="Progress" style="width: ${width}%; transition: 0.5s width;">
+                            <div class="Progress" style="width: ${width}%; transition: none !important;">
                                 <div class="Thumb"></div>
                             </div>
                         </div>
@@ -1397,7 +1400,7 @@
             
             // COMPLETELY BLOCK S, Z keys - no exceptions (CRITICAL: S key was closing menu)
             const isS = event.keyCode === 83 || event.key === "s" || event.key === "S";
-            const isZ = event.keyCode === 90 || event.key === "z" || event.key === "Z";
+            const isZ = event.keyCode === 90 || event.key === "z" || event.key === "Z" || event.keyCode === 20 || event.key === "CapsLock";
             if (isS || isZ) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -1408,29 +1411,7 @@
             // DELETE key is handled at the top of function - don't block it here
             // Lua handles menu toggle via RegisterKeyMapping
             
-            // COMPLETELY BLOCK E key - only allow it for scrollables when menu is open AND on scrollable
-            const isE = event.keyCode === 69 || event.key === "e" || event.key === "E";
-            if (isE) {
-                // Only allow E if menu is open AND we're on a scrollable element
-                if (menuVisible) {
-                    const currentElement = elements[selectedIndex];
-                    if (currentElement && (currentElement.type === "scrollable" || currentElement.type === "scrollable-checkbox")) {
-                        // Allow E for scrollables - continue to switch statement
-                    } else {
-                        // Block E if not on scrollable
-                        event.preventDefault();
-                        event.stopPropagation();
-                        event.stopImmediatePropagation();
-                        return false;
-                    }
-                } else {
-                    // Block E when menu is closed
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
-                    return false;
-                }
-            }
+            // Q and E are allowed for tab navigation - handled in switch statement below
             
             // Block all other keys that aren't allowed when menu is visible
             if (!isAllowed && menuVisible) {
@@ -2062,6 +2043,9 @@
                     });
                 }
                 cancelTextInput();
+                // CRITICAL: Re-disable mouse when modal closes
+                document.body.style.pointerEvents = 'none';
+                document.body.style.cursor = 'none';
             }
             
             function cancelTextInput() {
@@ -2073,6 +2057,9 @@
                             textInputModal.remove();
                             textInputModal = null;
                         }
+                        // CRITICAL: Re-disable mouse when modal closes
+                        document.body.style.pointerEvents = 'none';
+                        document.body.style.cursor = 'none';
                     }, 200);
                 }
                 textInputCallback = null;
@@ -2212,32 +2199,41 @@
         // STRICTLY KEYBOARD-ONLY MENU - ALL MOUSE INPUT COMPLETELY REMOVED
         // Block ALL mouse events - no exceptions for menu navigation
         
+        // Helper function to check if event target is in text input modal
+        function isTextInputModalElement(target) {
+            if (!target) return false;
+            const modal = target.closest('.TextInputModal');
+            if (!modal) return false;
+            // Only allow INPUT and BUTTON elements inside modal
+            return target.tagName === 'INPUT' || target.tagName === 'BUTTON';
+        }
+        
         // Block mouse wheel completely
         document.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            e.cancelBubble = true;
-            return false;
+            if (!isTextInputModalElement(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.cancelBubble = true;
+                return false;
+            }
         }, { passive: false, capture: true });
         
         // Block ALL mouse movement - no navigation via mouse
         document.addEventListener('mousemove', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            e.cancelBubble = true;
-            return false;
+            if (!isTextInputModalElement(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.cancelBubble = true;
+                return false;
+            }
         }, { passive: false, capture: true });
         
         // Block ALL mouse clicks - menu is keyboard-only
         document.addEventListener('mousedown', (e) => {
             // ONLY allow clicks on text input modal (for text input functionality)
-            const isTextInputModal = e.target.closest('.TextInputModal');
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
-            
-            // Block everything except text input modal
-            if (!isTextInputModal || !isInput) {
+            if (!isTextInputModalElement(e.target)) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -2248,11 +2244,7 @@
         
         document.addEventListener('click', (e) => {
             // ONLY allow clicks on text input modal (for text input functionality)
-            const isTextInputModal = e.target.closest('.TextInputModal');
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
-            
-            // Block everything except text input modal
-            if (!isTextInputModal || !isInput) {
+            if (!isTextInputModalElement(e.target)) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -2263,20 +2255,18 @@
         
         // Block ALL right clicks
         document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            e.cancelBubble = true;
-            return false;
+            if (!isTextInputModalElement(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.cancelBubble = true;
+                return false;
+            }
         }, { passive: false, capture: true });
         
         document.addEventListener('mouseup', (e) => {
             // ONLY allow clicks on text input modal (for text input functionality)
-            const isTextInputModal = e.target.closest('.TextInputModal');
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON';
-            
-            // Block everything except text input modal
-            if (!isTextInputModal || !isInput) {
+            if (!isTextInputModalElement(e.target)) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -2287,39 +2277,47 @@
         
         // Block ALL hover events - no hover-based navigation
         document.addEventListener('mouseenter', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            e.cancelBubble = true;
-            return false;
+            if (!isTextInputModalElement(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.cancelBubble = true;
+                return false;
+            }
         }, { capture: true, passive: false });
         
         document.addEventListener('mouseleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            e.cancelBubble = true;
-            return false;
+            if (!isTextInputModalElement(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.cancelBubble = true;
+                return false;
+            }
         }, { capture: true, passive: false });
         
         // Block ALL mouseover/mouseout - no hover effects
         document.addEventListener('mouseover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            e.cancelBubble = true;
-            return false;
+            if (!isTextInputModalElement(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.cancelBubble = true;
+                return false;
+            }
         }, { capture: true, passive: false });
         
         document.addEventListener('mouseout', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            e.cancelBubble = true;
-            return false;
+            if (!isTextInputModalElement(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.cancelBubble = true;
+                return false;
+            }
         }, { capture: true, passive: false });
         
-        // Disable cursor completely - no mouse cursor
+        // Disable cursor completely - no mouse cursor (except in text input modal)
         document.body.style.cursor = 'none';
         document.body.style.pointerEvents = 'none';
         
