@@ -1039,7 +1039,8 @@ function playUiTick() {
         // Banner images for themes 1-4 (updated with permanent GitHub links)
         let banner = {
             link: "https://raw.githubusercontent.com/MotionLua/motion-banners/refs/heads/main/theme1.png", // Theme 1
-            color: "168, 25, 56"
+            color: "168, 25, 56",
+            highlightColor: "255, 200, 150" // Highlight color for theme
         };
         
         // Theme banner links (for theme selector)
@@ -1047,7 +1048,8 @@ function playUiTick() {
             1: "https://raw.githubusercontent.com/MotionLua/motion-banners/refs/heads/main/theme1.png",
             2: "https://raw.githubusercontent.com/MotionLua/motion-banners/refs/heads/main/theme2.png",
             3: "https://raw.githubusercontent.com/MotionLua/motion-banners/refs/heads/main/theme.png",
-            4: "https://raw.githubusercontent.com/MotionLua/motion-banners/refs/heads/main/theme4.png"
+            4: "https://raw.githubusercontent.com/MotionLua/motion-banners/refs/heads/main/theme4.png",
+            5: "https://raw.githubusercontent.com/MotionLua/motion-banners/refs/heads/main/theme5.png"
         };
         let username = "Player";
         let tabRefs = [];
@@ -1124,6 +1126,7 @@ function playUiTick() {
             const topPosition = selectedIndex * ITEM_HEIGHT_VW;
             
             // Apply ALL styles DIRECTLY - no requestAnimationFrame for zero delay
+            const highlightColor = banner.highlightColor || banner.color || '168, 25, 56';
             highlight.style.top = `${topPosition}vw`;
             highlight.style.height = `${ITEM_HEIGHT_VW}vw`;
             highlight.style.display = 'block';
@@ -1131,9 +1134,9 @@ function playUiTick() {
             highlight.style.visibility = 'visible';
             highlight.style.transition = 'none';
             highlight.style.transform = 'translateZ(0)';
-            highlight.style.backgroundColor = `rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 0.60)`;
-            highlight.style.borderColor = `rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 1)`;
-            highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color || banner.highlightColor || '168, 25, 56'})`;
+            highlight.style.backgroundColor = `rgba(${highlightColor}, 0.60)`;
+            highlight.style.borderColor = `rgba(${highlightColor}, 1)`;
+            highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${highlightColor})`;
             
             // Scroll container instantly - no smooth scrolling
             const container = document.getElementById('tabsContainer');
@@ -1837,6 +1840,11 @@ function playUiTick() {
                         document.documentElement.style.setProperty('--menu-color', data.bannerColor);
                     }
                     
+                    if (data.highlightColor) {
+                        banner.highlightColor = data.highlightColor;
+                        document.documentElement.style.setProperty('--select-blue', data.highlightColor);
+                    }
+                    
                     // Reset history when opening menu
                     history = [];
                     
@@ -1874,6 +1882,12 @@ function playUiTick() {
                     banner.color = data.bannerColor;
                     document.documentElement.style.setProperty('--menu-color', data.bannerColor);
                 }
+                if (data.highlightColor) {
+                    banner.highlightColor = data.highlightColor;
+                    document.documentElement.style.setProperty('--select-blue', data.highlightColor);
+                }
+                // Update highlight immediately
+                updateHighlight();
             }
             
             if (data.action === "updateTheme") {
@@ -1886,6 +1900,12 @@ function playUiTick() {
                     banner.color = data.bannerColor;
                     document.documentElement.style.setProperty('--menu-color', data.bannerColor);
                 }
+                if (data.highlightColor) {
+                    banner.highlightColor = data.highlightColor;
+                    document.documentElement.style.setProperty('--select-blue', data.highlightColor);
+                }
+                // Update highlight immediately
+                updateHighlight();
             }
             
             if (data.action === "updateElements") {
