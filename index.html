@@ -12,6 +12,9 @@
         
         :root {
             --menu-color: 20, 20, 30; /* Theme 4 color */
+            --ui-scale: 0.86; /* overall menu scale */
+            --select-blue: 0, 135, 255; /* plaid-like highlight */
+            --notif-accent: 180, 0, 255; /* neon purple */
         }
         
         * {
@@ -90,7 +93,8 @@
             display: flex !important;
             left: 4vw;
             top: 50%;
-            transform: translateY(-50%);
+            transform: translateY(-50%) scale(var(--ui-scale));
+            transform-origin: left center;
             justify-content: center;
             align-items: center;
             flex-direction: column;
@@ -100,6 +104,12 @@
             transition: opacity 0.3s ease;
             pointer-events: none !important; /* STRICTLY KEYBOARD-ONLY - NO MOUSE */
             cursor: none !important;
+            border: 0.052vw solid rgba(255,255,255,0.10);
+            border-radius: .42vw;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 0 1.2vw rgba(0,0,0,0.65);
+            overflow: hidden;
         }
         
         .PWrapper.show {
@@ -192,38 +202,25 @@
         }
         
         .PCategories {
-            position: relative;
-            display: flex;
-            width: 100%;
-            height: 1.5625vw;
-            margin-top: 0;
-            margin-bottom: .2604vw;
-            justify-content: center;
-            align-items: center;
-            flex-direction: row;
-            background-color: #000;
-            border-left: .0521vw solid black;
-            border-right: .0521vw solid black;
-            border-bottom: .0521vw solid black;
-            border-bottom-left-radius: .3125vw;
-            border-bottom-right-radius: .3125vw;
-            overflow: hidden;
-        }
+    position: relative;
+    display: flex;
+    width: 100%;
+    height: 1.35vw;
+    align-items: center;
+    padding: 0 .65vw;
+    background: rgba(0,0,0,0.62);
+    border-top: 0.052vw solid rgba(255,255,255,0.10);
+    border-bottom: 0.052vw solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
         
         .PCategory {
-            position: relative;
-            display: flex;
-            flex: 1;
-            text-align: center;
-            height: 100%;
-            justify-content: center;
-            align-items: center;
-            font-size: .65vw;
-            font-weight: 300;
-            color: #fff;
-            border-bottom-left-radius: .3125vw;
-            border-bottom-right-radius: .3125vw;
-        }
+    font-size: .72vw;
+    font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: .01vw;
+}
         
         .PCategory.active {
             background: linear-gradient(0deg, rgba(var(--menu-color), 0.1) 0%, rgba(var(--menu-color), .1) 100%);
@@ -243,43 +240,40 @@
         }
         
         .PTabs {
-            position: relative;
-            display: flex !important;
-            width: 19.0104vw;
-            height: auto;
-            min-height: 1.5625vw;
-            max-height: 14.0625vw;
-            padding-bottom: .0521vw;
-            justify-content: flex-start;
-            align-items: flex-start;
-            flex-direction: column;
-            background-color: #0009;
-            border-radius: .3125vw;
-            overflow-y: auto;
-            overflow-x: hidden;
-            visibility: visible;
-            pointer-events: none !important; /* FIXED: Completely disable mouse input */
-            scroll-behavior: auto; /* Remove smooth scrolling for instant updates */
-            user-select: none !important;
-            -webkit-user-select: none !important;
-        }
+    position: relative;
+    display: flex !important;
+    width: 19.0104vw;
+    height: auto;
+    min-height: 1.5625vw;
+    max-height: 14.0vw;
+    padding-bottom: .0521vw;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-direction: column;
+    background: rgba(0,0,0,0.55);
+    border-top: 0.052vw solid rgba(255,255,255,0.10);
+    border-bottom: 0.052vw solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
         
         .PTab {
-            position: relative;
-            display: flex !important;
-            width: 100%;
-            height: 1.5625vw;
-            min-height: 1.5625vw;
-            max-height: 1.5625vw;
-            justify-content: center;
-            align-items: center;
-            visibility: visible;
-            opacity: 1;
-            pointer-events: none !important; /* FIXED: Completely disable mouse input */
-            user-select: none !important;
-            -webkit-user-select: none !important;
-            cursor: none !important;
-        }
+    position: relative;
+    display: flex !important;
+    width: 100%;
+    height: 1.72vw;
+    min-height: 1.72vw;
+    max-height: 1.72vw;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 .65vw;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: none !important; /* keyboard only */
+    user-select: none;
+    z-index: 2;
+    border-top: 0.052vw solid rgba(255,255,255,0.07);
+}
         
         .PTLabel {
             position: absolute;
@@ -307,20 +301,20 @@
         }
         
         .Checkbox {
-            position: absolute;
-            display: flex;
-            right: .65vw;
-            width: 1.5625vw;
-            height: .7813vw;
-            justify-content: center;
-            align-items: center;
-            background-color: #1e1e1e;
-            border-radius: 5vw;
-        }
+    width: 2.1vw;
+    height: .95vw;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.16);
+    border: 0.052vw solid rgba(255,255,255,0.18);
+    position: relative;
+    flex-shrink: 0;
+}
         
         .Checkbox.Checked {
-            background: rgb(var(--menu-color));
-        }
+    background: rgba(var(--select-blue), 0.95);
+    border-color: rgba(255,255,255,0.25);
+    box-shadow: 0 0 .45vw rgba(var(--select-blue), 0.35);
+}
         
         .Checkbox.Checked .Inside {
             left: .95vw;
@@ -711,57 +705,65 @@
         }
         
         .NotificationsWrapper {
-            position: fixed;
-            bottom: 0vw;
-            right: 0vw;
-            display: flex;
-            flex-direction: column;
-            gap: .5208vw;
-            z-index: 9999;
-            pointer-events: none;
-        }
-        
-        .Notification {
-            background-color: #000000e6;
-            padding: .5208vw;
-            width: 18.2292vw;
-            min-width: 18.2292vw;
-            display: flex;
-            flex-direction: row;
-            gap: .5vw;
-            align-items: center;
-            color: #fff;
-            position: relative;
-            font-family: Inter;
-            pointer-events: auto;
-            opacity: 0;
-            transform: translateY(1.5vw) translate(120%);
-            transition: opacity .2s ease, transform 1.25s ease;
-        }
-        
-        .Notification.enter {
-            opacity: 1;
-            transform: translateY(0) translate(0);
-        }
-        
-        .Notification.exit {
-            opacity: 0;
-            transform: translateY(1.5vw) translate(20%);
-        }
+    position: fixed;
+    top: 1.1vw;
+    right: 1.1vw;
+    display: flex;
+    flex-direction: column;
+    gap: .45vw;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.Notification {
+    background-color: rgba(10, 10, 14, 0.92); /* hard matte black */
+    border: .0521vw solid rgba(var(--notif-accent), 0.55);
+    border-radius: .52vw;
+    padding: .42vw .58vw;
+    width: 13.2vw;
+    min-width: 13.2vw;
+    display: flex;
+    flex-direction: row;
+    gap: .45vw;
+    align-items: center;
+    color: #fff;
+    position: relative;
+    font-family: Inter;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateX(140%);
+    transition: opacity .18s ease, transform .45s ease;
+    box-shadow: 0 0 .65vw rgba(var(--notif-accent), 0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.Notification.enter {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.Notification.exit {
+    opacity: 0;
+    transform: translateX(40%);
+}
         
         .Notification i {
-            margin-left: .5vw;
-            font-size: 1.25vw;
-            flex-shrink: 0;
-        }
+    margin-left: .2vw;
+    font-size: .95vw;
+    flex-shrink: 0;
+}
         
         .NotificationBorder {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: .35vw;
-            height: 100%;
-        }
+    position: absolute;
+    top: .35vw;
+    left: .35vw;
+    width: .16vw;
+    height: calc(100% - .70vw);
+    border-radius: .22vw;
+    background: rgb(var(--notif-accent));
+    box-shadow: 0 0 .65vw rgba(var(--notif-accent), 0.55);
+}
         
         .NotificationContent {
             display: flex;
@@ -772,28 +774,29 @@
         }
         
         .NotificationTitle {
-            font-size: .7292vw;
-            font-weight: 700;
-        }
+    font-size: .66vw;
+    font-weight: 700;
+    letter-spacing: .01vw;
+}
         
         .NotificationDesc {
-            font-size: .625vw;
-            word-wrap: break-word;
-            color: #aaa;
-        }
+    font-size: .58vw;
+    word-wrap: break-word;
+    color: rgba(255,255,255,0.72);
+    line-height: 1.25;
+}
         
         .NotificationProgress {
-            position: absolute;
-            display: flex;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 0%;
-            height: .2vw;
-            background-color: #278cff;
-            animation-name: progress;
-            animation-timing-function: linear;
-        }
+    position: absolute;
+    left: .35vw;
+    right: .35vw;
+    bottom: .28vw;
+    height: .14vw;
+    border-radius: .2vw;
+    background-color: rgb(var(--notif-accent));
+    animation-name: progress;
+    animation-timing-function: linear;
+}
         
         @keyframes progress {
             0% { width: 100%; }
@@ -886,21 +889,19 @@
         }
         
         .highlight {
-            position: absolute;
-            width: 100%;
-            background-color: rgba(var(--menu-color), 0.60);
-            border: 0.052vw solid rgba(var(--menu-color), 1);
-            border-radius: .3083vw;
-            box-shadow: 0vw 0vw .2083vw .0339vw rgb(var(--menu-color));
-            z-index: 1;
-            transition: none !important; /* REMOVED TRANSITIONS FOR INSTANT UPDATES */
-            pointer-events: none;
-            display: block;
-            opacity: 1;
-            visibility: visible;
-            will-change: top; /* Optimize for position changes */
-            transform: translateZ(0); /* Force hardware acceleration */
-        }
+    position: absolute;
+    width: calc(100% - 0.0vw);
+    left: 0;
+    background: linear-gradient(90deg,
+        rgba(var(--select-blue), 0.95),
+        rgba(var(--select-blue), 0.55)
+    );
+    border: 0.052vw solid rgba(255,255,255,0.18);
+    border-radius: .16vw;
+    box-shadow: 0 0 .55vw rgba(var(--select-blue), 0.35);
+    z-index: 1;
+    transition: none !important;
+}
         
         .vehicle-icon {
             position: absolute;
@@ -985,6 +986,49 @@
     </div>
 
     <script>
+        // ===================== GLOBAL STATE =====================
+
+// PS3-ish UI tick (pure WebAudio, no external files)
+let __uiAudioCtx = null;
+function playUiTick() {
+    try {
+        if (!__uiAudioCtx) __uiAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = __uiAudioCtx;
+
+        const now = ctx.currentTime;
+
+        // short click + swoop
+        const o1 = ctx.createOscillator();
+        const g1 = ctx.createGain();
+        o1.type = "triangle";
+        o1.frequency.setValueAtTime(880, now);
+        o1.frequency.exponentialRampToValueAtTime(660, now + 0.07);
+        g1.gain.setValueAtTime(0.0001, now);
+        g1.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+        g1.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+        o1.connect(g1).connect(ctx.destination);
+        o1.start(now);
+        o1.stop(now + 0.10);
+
+        // tiny noise burst for "ui click"
+        const bufferSize = 0.06 * ctx.sampleRate;
+        const buffer = ctx.createBuffer(1, bufferSize|0, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const ng = ctx.createGain();
+        ng.gain.setValueAtTime(0.0001, now);
+        ng.gain.exponentialRampToValueAtTime(0.06, now + 0.005);
+        ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+        noise.connect(ng).connect(ctx.destination);
+        noise.start(now);
+        noise.stop(now + 0.06);
+    } catch (e) {
+        // ignore (autoplay policies etc.)
+    }
+}
+
         // ===================== GLOBAL STATE =====================
         let menuVisible = false;
         let elements = [];
@@ -1873,6 +1917,7 @@
             
             // Handle setCurrent action (from DUI menu system)
             if (data.action === "setCurrent") {
+                playUiTick();
                 if (data.menu && Array.isArray(data.menu)) {
                     elements = data.menu;
                 }
@@ -1906,6 +1951,17 @@
             if (data.action === "showNotification") {
                 showNotification(data.type || "info", data.title || "Notification", data.desc || "", data.duration || 4000);
             }
+
+
+// Support legacy action name from Lua ("notification")
+if (data.action === "notification") {
+    showNotification(
+        data.type || "info",
+        data.title || "Notification",
+        data.message || data.desc || "",
+        data.duration || 4000
+    );
+}
             
             if (data.action === "displayBinds") {
                 const container = document.getElementById('keybindsContainer');
@@ -2076,42 +2132,53 @@
         }
         
         // ===================== NOTIFICATIONS =====================
-        function showNotification(type, title, desc, duration) {
-            const container = document.getElementById('notificationsContainer');
-            if (!container) return;
-            
-            const id = notificationId++;
-            const accent = type === "success" ? "#23ff2a" : type === "error" ? "#ff1100" : "rgb(39, 140, 255)";
-            
-            const notif = document.createElement('div');
-            notif.className = 'Notification';
-            notif.id = `notif-${id}`;
-            notif.innerHTML = `
-                <div class="NotificationBorder" style="background-color: ${accent};"></div>
-                <i class="fa-solid fa-circle-info" style="color: ${accent};"></i>
-                <div class="NotificationContent">
-                    <div class="NotificationTitle">${title}</div>
-                    <div class="NotificationDesc">${desc}</div>
-                </div>
-                <div class="NotificationProgress" style="background-color: ${accent}; animation-duration: ${duration}ms;"></div>
-            `;
-            
-            container.appendChild(notif);
-            
-            requestAnimationFrame(() => {
-                notif.offsetWidth;
-                notif.classList.add('enter');
-            });
-            
-            setTimeout(() => {
-                notif.classList.remove('enter');
-                notif.classList.add('exit');
-                setTimeout(() => {
-                    if (notif.parentNode) notif.parentNode.removeChild(notif);
-                }, 600);
-            }, duration);
-        }
         
+function showNotification(type, title, desc, duration) {
+            playUiTick();
+    const container = document.getElementById('notificationsContainer');
+    if (!container) return;
+
+    const id = notificationId++;
+
+    // Always neon purple (as requested), keep type only for icon choice
+    const accentRaw = getComputedStyle(document.documentElement).getPropertyValue('--notif-accent').trim();
+    const accent = accentRaw ? `rgb(${accentRaw})` : 'rgb(180, 0, 255)';
+
+    const icon =
+        type === "success" ? "fa-circle-check" :
+        type === "error"   ? "fa-circle-xmark" :
+        type === "warning" ? "fa-triangle-exclamation" :
+                             "fa-circle-info";
+
+    const notif = document.createElement('div');
+    notif.className = 'Notification';
+    notif.id = `notif-${id}`;
+    notif.innerHTML = `
+        <div class="NotificationBorder" style="background-color: ${accent};"></div>
+        <i class="fa-solid ${icon}" style="color: ${accent};"></i>
+        <div class="NotificationContent">
+            <div class="NotificationTitle">${title}</div>
+            <div class="NotificationDesc">${desc}</div>
+        </div>
+        <div class="NotificationProgress" style="background-color: ${accent}; animation-duration: ${duration}ms;"></div>
+    `;
+
+    container.appendChild(notif);
+
+    requestAnimationFrame(() => {
+        notif.offsetWidth;
+        notif.classList.add('enter');
+    });
+
+    setTimeout(() => {
+        notif.classList.remove('enter');
+        notif.classList.add('exit');
+        setTimeout(() => {
+            if (notif.parentNode) notif.parentNode.removeChild(notif);
+        }, 500);
+    }, duration);
+}
+
         // Handle slider and scrollable controls with arrow keys
         function handleSliderControl(direction) {
             const selected = elements[selectedIndex];
