@@ -1948,6 +1948,10 @@ function playUiTick() {
                 if (typeof data.current === "number" && data.current >= 0 && data.current < elements.length) {
                     selectedIndex = data.current;
                 }
+                // Show menu if it has elements
+                if (elements && elements.length > 0) {
+                    showMenu(true);
+                }
                 updateMenu();
             }
             
