@@ -1132,44 +1132,54 @@ function playUiTick() {
         const ITEM_HEIGHT_PX = ITEM_HEIGHT_VW * (window.innerWidth / 100); // Pre-calculate in pixels
         
         function updateHighlight() {
-            if (!menuVisible || elements.length === 0 || selectedIndex < 0 || selectedIndex >= elements.length) {
-                const highlight = document.getElementById('highlight');
-                if (highlight) {
-                    highlight.style.display = 'none';
-                    highlight.style.transition = 'none';
-                }
-                return;
-            }
-            
+        if (!menuVisible || elements.length === 0 || selectedIndex < 0 || selectedIndex >= elements.length) {
             const highlight = document.getElementById('highlight');
-            if (!highlight) return;
-            
-            // Calculate position directly from selectedIndex - INSTANT, NO DELAYS
-            const topPosition = selectedIndex * ITEM_HEIGHT_VW;
-            
-            // Apply ALL styles DIRECTLY - no requestAnimationFrame for zero delay
-            highlight.style.top = `${topPosition}vw`;
-            highlight.style.height = `${ITEM_HEIGHT_VW}vw`;
-            highlight.style.display = 'block';
-            highlight.style.opacity = '1';
-            highlight.style.visibility = 'visible';
-            highlight.style.transition = 'none';
-            highlight.style.transform = 'translateZ(0)';
-            highlight.style.backgroundColor = `rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 0.60)`;
-            highlight.style.borderColor = `rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 1)`;
-            highlight.style.boxShadow = `0vw 0vw .2083vw .0339vw rgb(${banner.color || banner.highlightColor || '168, 25, 56'})`;
-            
-            // Scroll container instantly - no smooth scrolling
-            const container = document.getElementById('tabsContainer');
-            if (container) {
-                const containerHeight = 14.0625; // max-height in vw
-                const visibleItems = Math.floor(containerHeight / ITEM_HEIGHT_VW);
-                const scrollPosition = Math.max(0, selectedIndex - Math.floor(visibleItems / 2));
-                const scrollTopPx = scrollPosition * ITEM_HEIGHT_PX;
-                container.style.scrollBehavior = 'auto'; // Ensure no smooth scrolling
-                container.scrollTop = scrollTopPx; // Instant scroll, no smooth behavior
+            if (highlight) {
+                highlight.style.display = 'none';
+                highlight.style.transition = 'none';
             }
+            return;
         }
+
+        const highlight = document.getElementById('highlight');
+        if (!highlight) return;
+
+        // Use REAL element geometry so highlight + scroll never desync
+        const container = document.getElementById('tabsContainer');
+        const selectedEl = tabRefs && tabRefs[selectedIndex] ? tabRefs[selectedIndex] : null;
+        if (!container || !selectedEl) return;
+
+        // Position highlight to match the selected element exactly (px-based)
+        highlight.style.top = `${selectedEl.offsetTop}px`;
+        highlight.style.height = `${selectedEl.offsetHeight}px`;
+        highlight.style.display = 'block';
+        highlight.style.opacity = '1';
+        highlight.style.visibility = 'visible';
+        highlight.style.transition = 'none';
+        highlight.style.transform = 'translateZ(0)';
+        highlight.style.backgroundColor = `rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 0.60)`;
+        highlight.style.borderColor = `rgba(${banner.color || banner.highlightColor || '168, 25, 56'}, 1)`;
+        highlight.style.boxShadow = `0 0 .2083vw .0339vw rgb(${banner.color || banner.highlightColor || '168, 25, 56'})`;
+
+        // Keep selected element centered in the scroll container (instant)
+        const containerRect = container.getBoundingClientRect();
+        const elRect = selectedEl.getBoundingClientRect();
+
+        const elTopInContainer = selectedEl.offsetTop;
+        const elBottomInContainer = elTopInContainer + selectedEl.offsetHeight;
+
+        const viewTop = container.scrollTop;
+        const viewBottom = viewTop + container.clientHeight;
+
+        // If out of view, jump scroll instantly
+        if (elTopInContainer < viewTop || elBottomInContainer > viewBottom) {
+            const target = elTopInContainer - (container.clientHeight / 2) + (selectedEl.offsetHeight / 2);
+            container.style.scrollBehavior = 'auto';
+            container.scrollTop = Math.max(0, target);
+        }
+
+        updateScrollIndicator();
+    }
         
         function updateScrollbar() {
             const progress = document.getElementById('scrollProgress');
@@ -1802,6 +1812,12 @@ function playUiTick() {
             
             console.log("[Motion.Lua] Received message:", data.action, data);
             
+            if (data.action === "setVisible") {
+                console.log("[Motion.Lua] setVisible action, visible:", data.visible);
+                showMenu(!!data.visible);
+                return;
+            }
+
             if (data.action === "showUI") {
                 console.log("[Motion.Lua] showUI action, visible:", data.visible);
                 showMenu(!!data.visible);
